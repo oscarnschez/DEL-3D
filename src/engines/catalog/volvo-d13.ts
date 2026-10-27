@@ -1,0 +1,56 @@
+import type { EngineDefinition } from '../schema';
+import { approxGeometry, GENERIC_VALVES, hp, lbft, SRC_I6 } from './common';
+
+export const volvoD13: EngineDefinition = {
+  id: 'volvo-d13',
+  manufacturer: 'Volvo',
+  model: 'D13',
+  variant: 'D13 (folleto Volvo Trucks Norteamérica)',
+  year: 'Folleto © 2016',
+  cylinders: 6,
+  layout: 'inline',
+  firingOrder: [1, 5, 3, 6, 2, 4],
+  firingOrderStatus: 'aproximado',
+  geometry: approxGeometry(131, 158, 17),
+  valvetrain: { camLocation: 'overhead', camshafts: 1, valvesPerCylinder: 4, ...GENERIC_VALVES, gearTrain: 'rear', engineBrake: 'Volvo Engine Brake (500 hp a 2,200 rpm)' },
+  injection: {
+    system: 'common-rail',
+    event: { soiBTDC: 8, duration: 26, pilotAdvance: 12 },
+    fuelPath: ['Tanque', 'Bomba de alimentación', 'Filtros', 'Bomba de alta presión', 'Riel común', 'Inyectores', 'Cámara'],
+    description: 'Riel común con presión máxima de 35,000 psi (2,400 bar) según el folleto. Calado y duración mostrados: educativos.',
+  },
+  air: {
+    turbo: 'vgt',
+    egr: true,
+    aftertreatment: ['DOC', 'DPF', 'SCR'],
+    description: 'Turbo de geometría variable de tobera deslizante, EGR ajustado y SCR con catalizador Cu-Z. El DPF se representa como típico de EPA 2010+ (no citado en el folleto).',
+  },
+  rpm: { idle: 600, max: 2100, ratedPower: 1700, peakTorque: 1100, status: 'aproximado' },
+  nominal: { powerKw: hp(500), torqueNm: lbft(1850), status: 'verificado' },
+  specs: [
+    { key: 'configuration', label: 'Configuración', value: '6 cilindros en línea, 4 tiempos, 4 válvulas/cil.', status: 'verificado', sourceId: 'd13-brochure' },
+    { key: 'displacement', label: 'Cilindrada', value: '12.8 L (780 in³)', status: 'verificado', sourceId: 'd13-brochure' },
+    { key: 'boreStroke', label: 'Diámetro × carrera', value: '131 × 158 mm (5.16 × 6.22 in)', status: 'verificado', sourceId: 'd13-brochure' },
+    { key: 'power', label: 'Potencia', value: '375–500 hp', status: 'verificado', sourceId: 'd13-brochure' },
+    { key: 'torque', label: 'Par máximo', value: '1,450–1,850 lb-ft a 950–1,100 rpm', status: 'verificado', sourceId: 'd13-brochure' },
+    { key: 'rpmRange', label: 'Régimen gobernado', value: '2,100 rpm (2,000 en Eco-Torque y XE)', status: 'verificado', sourceId: 'd13-brochure' },
+    { key: 'compressionRatio', label: 'Relación de compresión', value: '17:1', status: 'verificado', sourceId: 'd13-brochure' },
+    { key: 'injection', label: 'Inyección', value: 'Riel común, hasta 2,400 bar', status: 'verificado', sourceId: 'd13-brochure' },
+    { key: 'aspiration', label: 'Sobrealimentación', value: 'Turbo VGT de tobera deslizante', status: 'verificado', sourceId: 'd13-brochure' },
+    { key: 'valvetrain', label: 'Distribución', value: 'Un árbol en cabeza (SOHC), 4 válvulas/cil.', status: 'verificado', sourceId: 'd13-brochure' },
+    { key: 'emissions', label: 'Emisiones', value: 'EGR + SCR (Cu-Z)', status: 'verificado', sourceId: 'd13-brochure' },
+    { key: 'weight', label: 'Peso en seco', value: '2,605 lb (1,182 kg)', status: 'verificado', sourceId: 'd13-brochure' },
+    { key: 'firingOrder', label: 'Orden de encendido', value: '1-5-3-6-2-4', status: 'aproximado', sourceId: 'i6-firing', note: 'Confirmado por Mack para el MP8 de la misma familia; no figura en el folleto Volvo.' },
+  ],
+  sources: [
+    { id: 'd13-brochure', title: 'Volvo Trucks — Volvo D13 Engine Brochure', url: 'https://www.volvotrucks.us/media/vtna/files/shared/powertrain/revised4147-101-volvo-d13-engine-brochure-low-res.pdf', accessed: '2026-10-27' },
+    SRC_I6,
+  ],
+  style: { block: '#4f565e', head: '#565e66', cover: '#1e2a38', accent: '#2a6fb5', coverStyle: 'stepped' },
+  assets: { provisional: true },
+  notes: [
+    'Árbol de levas único en cabeza (SOHC) con balancines: así lo indica el folleto.',
+    'Comparte diámetro y carrera (131 × 158 mm) con el Mack MP8.',
+    'Tren de engranajes trasero, biela, paso, reglaje y colores: estimaciones.',
+  ],
+};

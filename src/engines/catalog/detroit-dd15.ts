@@ -1,0 +1,56 @@
+import type { EngineDefinition } from '../schema';
+import { approxGeometry, GENERIC_VALVES, hp, lbft, SRC_I6 } from './common';
+
+export const detroitDD15: EngineDefinition = {
+  id: 'detroit-dd15',
+  manufacturer: 'Detroit Diesel',
+  model: 'DD15',
+  variant: 'Generación con turbo-compound (hoja de especificaciones de distribuidor)',
+  year: 'Año no indicado en la fuente',
+  cylinders: 6,
+  layout: 'inline',
+  firingOrder: [1, 5, 3, 6, 2, 4],
+  firingOrderStatus: 'aproximado',
+  geometry: approxGeometry(139, 163, 18.4),
+  valvetrain: { camLocation: 'overhead', camshafts: 2, valvesPerCylinder: 4, ...GENERIC_VALVES, gearTrain: 'rear', engineBrake: 'Jacobs integrado de 3 niveles' },
+  injection: {
+    system: 'amplified-common-rail',
+    event: { soiBTDC: 7, duration: 28, pilotAdvance: 10 },
+    fuelPath: ['Tanque', 'Bomba de baja presión', 'Filtros', 'Bomba de alta presión', 'Riel común', 'Inyectores con amplificador', 'Cámara'],
+    description: 'ACRS (Amplified Common Rail System): el riel alimenta inyectores que amplifican hidráulicamente la presión antes de inyectar. Calado y duración mostrados: educativos.',
+  },
+  air: {
+    turbo: 'fixed',
+    turboCompound: true,
+    egr: true,
+    aftertreatment: ['DOC', 'DPF', 'SCR'],
+    description: 'Turbo de geometría fija sin wastegate más turbo-compound: una turbina de potencia recupera energía del escape y la devuelve al cigüeñal por engranajes.',
+  },
+  rpm: { idle: 600, max: 2100, ratedPower: 1800, peakTorque: 1100, status: 'verificado' },
+  nominal: { powerKw: hp(560), torqueNm: lbft(1850), status: 'verificado' },
+  specs: [
+    { key: 'configuration', label: 'Configuración', value: '6 cilindros en línea', status: 'verificado', sourceId: 'dd15-sheet' },
+    { key: 'displacement', label: 'Cilindrada', value: '14.8 L (906 in³)', status: 'verificado', sourceId: 'dd15-sheet' },
+    { key: 'boreStroke', label: 'Diámetro × carrera', value: '139 × 163 mm (5.47 × 6.42 in)', status: 'verificado', sourceId: 'dd15-sheet' },
+    { key: 'power', label: 'Potencia', value: '475–560 hp a 1,800 rpm', status: 'verificado', sourceId: 'dd15-sheet' },
+    { key: 'torque', label: 'Par máximo', value: '1,650–1,850 lb-ft a 1,100 rpm', status: 'verificado', sourceId: 'dd15-sheet' },
+    { key: 'compressionRatio', label: 'Relación de compresión', value: '≈18.4:1', status: 'aproximado', sourceId: 'dd15-sheet', note: 'La hoja la imprime como «18:4:1»; se interpreta como 18.4:1.' },
+    { key: 'injection', label: 'Inyección', value: 'Riel común amplificado (ACRS)', status: 'verificado', sourceId: 'dd15-sheet' },
+    { key: 'aspiration', label: 'Sobrealimentación', value: 'Turbo sin wastegate ni geometría variable + turbo-compound', status: 'verificado', sourceId: 'dd15-sheet' },
+    { key: 'valvetrain', label: 'Distribución', value: 'Doble árbol en cabeza (DOHC), tren de engranajes trasero', status: 'verificado', sourceId: 'dd15-sheet' },
+    { key: 'weight', label: 'Peso en seco', value: '2,970 lb (1,350 kg)', status: 'verificado', sourceId: 'dd15-sheet' },
+    { key: 'other', label: 'Freno de motor', value: 'Jacobs integrado de tres niveles', status: 'verificado', sourceId: 'dd15-sheet' },
+    { key: 'firingOrder', label: 'Orden de encendido', value: '1-5-3-6-2-4', status: 'aproximado', sourceId: 'i6-firing', note: 'Orden estándar de I6; no figura en la hoja consultada.' },
+  ],
+  sources: [
+    { id: 'dd15-sheet', title: 'Detroit DD15 — Spec Sheet (Velocity Truck Centres)', url: 'https://www.velocitytruckcentres.com.au/s3/media/DD15SpecSheet.pdf', accessed: '2026-10-27' },
+    SRC_I6,
+  ],
+  style: { block: '#7d858e', head: '#868e97', cover: '#25292e', accent: '#2f6fd6', coverStyle: 'split' },
+  assets: { provisional: true },
+  notes: [
+    'Único del catálogo con doble árbol de levas en cabeza y turbo-compound acoplado al tren de engranajes trasero.',
+    'Generaciones posteriores del DD15 cambiaron el sistema de aire; esta ficha corresponde a la hoja citada.',
+    'Biela, paso entre cilindros, reglaje y colores: estimaciones.',
+  ],
+};
