@@ -93,7 +93,7 @@ export const useApp = create<AppState>((set) => ({
     };
     switch (mode) {
       case 'interior':
-        set({ ...base, removed: { valveCover: true, head: false, oilPan: true, block: false, manifolds: false }, transparency: 0.82 });
+        set({ ...base, removed: { valveCover: true, head: false, oilPan: true, block: false, manifolds: true }, transparency: 0.82 });
         break;
       case 'combustion':
         set({ ...base, cut: 'cilindro' });

@@ -128,10 +128,13 @@ export function getMaterials(): MaterialLib {
 /**
  * Prepara un material clonado para la vista de sección: con un corte activo, las caras
  * interiores se pintan con rayado de sección, imitando el relleno de corte de un CAD.
+ * `hollow`: la pieza se modela como volumen macizo sin cavidades (bloque sin cilindros, culata
+ * sin cámaras), así que el corte la deja abierta en lugar de rellenarla y tapar el interior.
  */
-export function patchSection(m: THREE.Material): void {
+export function patchSection(m: THREE.Material, hollow = false): void {
   if (m.userData.sectionPatched) return;
   m.userData.sectionPatched = true;
+  if (hollow) return;
   m.side = THREE.DoubleSide;
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uSection = sectionUniform;

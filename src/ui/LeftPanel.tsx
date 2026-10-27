@@ -171,7 +171,7 @@ function Systems() {
           ['head', 'Culata'],
           ['oilPan', 'Cárter'],
           ['block', 'Bloque y carcasas'],
-          ['manifolds', 'Múltiples'],
+          ['manifolds', 'Admisión, escape y turbo'],
         ] as const
       ).map(([k, label]) => (
         <div key={k} className={`toggle ${removed[k] ? 'on' : ''}`} onClick={() => toggleCover(k)}>

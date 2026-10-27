@@ -6,6 +6,11 @@ import { useApp } from '@/state/store';
 import { patchSection } from '@/render/materials';
 import { useSelection, visualStateFor } from './selection';
 
+/** Piezas que se retiran con la cubierta «Admisión, escape y turbo». */
+/** Volúmenes simplificados sin cavidades internas: el corte los abre en vez de rayarlos. */
+const HOLLOW = new Set<PartId>(['block', 'head', 'valveCover', 'oilPan']);
+const AIR_PIPING = new Set<PartId>(['intakeManifold', 'exhaustManifold', 'intercooler', 'egr', 'turbo', 'aftertreatment']);
+
 interface PartProps {
   id: PartId;
   index?: number;
@@ -51,7 +56,7 @@ export function Part({ id, index, shell, explodeScale = 0.45, children, position
         (id === 'head' && app.removed.head) ||
         (id === 'oilPan' && app.removed.oilPan) ||
         (id === 'block' && app.removed.block) ||
-        ((id === 'intakeManifold' || id === 'exhaustManifold') && app.removed.manifolds);
+        (AIR_PIPING.has(id) && app.removed.manifolds);
       g.visible = !(vs === 'hidden' || vs === 'isolatedOut' || removed);
       const hovered = sel.hovered === key;
       let opacity = 1;
@@ -70,7 +75,7 @@ export function Part({ id, index, shell, explodeScale = 0.45, children, position
           let mm = m;
           if (!d || m.userData.owner !== g.uuid) {
             mm = m.clone();
-            patchSection(mm);
+            patchSection(mm, HOLLOW.has(id));
             const std = mm as THREE.MeshStandardMaterial;
             d = {
               base: m,

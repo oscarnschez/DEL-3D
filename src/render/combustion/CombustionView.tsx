@@ -147,7 +147,7 @@ function ChamberDetail({ cyl }: { cyl: number }) {
   // acercamiento cinematográfico al cilindro observado
   useEffect(() => {
     const x = L.cylX[i];
-    void cameraApi.lookAt([x + 0.55, L.deckY + 0.12, 0.42], [x, L.deckY - 0.08, 0], true);
+    void cameraApi.lookAt([x + 0.85, L.deckY + 0.02, 0.5], [x, L.deckY - 0.12, 0], true);
   }, [i, L]);
 
   useFrame((_, dt) => {
