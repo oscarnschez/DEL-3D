@@ -1,0 +1,57 @@
+import type { EngineDefinition } from '../schema';
+import { approxGeometry, GENERIC_VALVES, hp, lbft, SRC_I6 } from './common';
+
+export const cumminsX15: EngineDefinition = {
+  id: 'cummins-x15',
+  manufacturer: 'Cummins',
+  model: 'X15',
+  variant: 'X15 Productivity Series',
+  year: '2024',
+  cylinders: 6,
+  layout: 'inline',
+  firingOrder: [1, 5, 3, 6, 2, 4],
+  firingOrderStatus: 'aproximado',
+  geometry: approxGeometry(137, 169, 17),
+  valvetrain: { camLocation: 'overhead', camshafts: 1, valvesPerCylinder: 4, ...GENERIC_VALVES, gearTrain: 'front', engineBrake: 'Cummins Engine Brake (hasta 600 hp de frenado)' },
+  injection: {
+    system: 'common-rail',
+    event: { soiBTDC: 8, duration: 26, pilotAdvance: 12 },
+    fuelPath: ['Tanque', 'Bomba de engranes', 'Filtros', 'Bomba de alta presión XPI', 'Acumulador', 'Inyectores', 'Cámara'],
+    description: 'Sistema XPI (Xtra-High Pressure Injection) de Cummins, con múltiples eventos de inyección por ciclo. La presión y el calado mostrados en la simulación son educativos.',
+  },
+  air: {
+    turbo: 'vgt',
+    egr: true,
+    aftertreatment: ['DOC', 'DPF', 'SCR'],
+    description: 'Turbo de geometría variable (VGT) con anillo de tobera deslizante, EGR enfriado y postratamiento Single-Module (DOC + DPF + SCR).',
+  },
+  rpm: { idle: 600, max: 2100, ratedPower: 1800, peakTorque: 1000, status: 'aproximado' },
+  nominal: { powerKw: hp(605), torqueNm: lbft(2050), status: 'verificado' },
+  specs: [
+    { key: 'configuration', label: 'Configuración', value: '6 cilindros en línea, 4 tiempos, 4 válvulas/cil.', status: 'verificado', sourceId: 'x15-marine' },
+    { key: 'displacement', label: 'Cilindrada', value: '14.9 L (912 in³)', status: 'verificado', sourceId: 'x15-marine' },
+    { key: 'boreStroke', label: 'Diámetro × carrera', value: '137 × 169 mm', status: 'verificado', sourceId: 'x15-marine', note: 'Dato de la hoja X15 marina de Cummins (misma plataforma X15).' },
+    { key: 'power', label: 'Potencia', value: '430–605 hp (321–451 kW)', status: 'verificado', sourceId: 'x15-prod' },
+    { key: 'torque', label: 'Par máximo', value: '1,650–2,050 lb-ft (2,237–2,779 N·m) a 900–1,000 rpm', status: 'verificado', sourceId: 'x15-prod' },
+    { key: 'rpmRange', label: 'Régimen gobernado', value: '2,000–2,100 rpm', status: 'verificado', sourceId: 'x15-prod' },
+    { key: 'injection', label: 'Inyección', value: 'XPI, alta presión con inyecciones múltiples', status: 'verificado', sourceId: 'x15-prod' },
+    { key: 'aspiration', label: 'Sobrealimentación', value: 'Turbo VGT (tobera deslizante)', status: 'verificado', sourceId: 'x15-prod' },
+    { key: 'emissions', label: 'Postratamiento', value: 'Single-Module (DOC + DPF + SCR); EGR enfriado', status: 'verificado', sourceId: 'x15-stagev', note: 'Composición DOC/DPF/SCR y EGR según la página X15 de Cummins.' },
+    { key: 'weight', label: 'Peso en seco', value: '2,961 lb (1,343 kg)', status: 'verificado', sourceId: 'x15-prod' },
+    { key: 'valvetrain', label: 'Distribución', value: 'Árbol en cabeza (SOHC) — representación', status: 'aproximado', note: 'Disposición del árbol no confirmada en las fuentes consultadas.' },
+    { key: 'firingOrder', label: 'Orden de encendido', value: '1-5-3-6-2-4', status: 'aproximado', sourceId: 'i6-firing', note: 'Orden estándar de I6; no confirmado en documentación Cummins consultada.' },
+  ],
+  sources: [
+    { id: 'x15-prod', title: 'Cummins — X15 Productivity Series (2024)', url: 'https://www.cummins.com/engines/x15-productivity-series-2024', accessed: '2026-10-27' },
+    { id: 'x15-stagev', title: 'Cummins — X15 (Stage V)', url: 'https://www.cummins.com/engines/x15-stage-v', accessed: '2026-10-27' },
+    { id: 'x15-marine', title: 'Cummins — X15 Marine Propulsion and Auxiliary Engines (hoja técnica)', url: 'https://www.cumminsperu.pe/uploads/shares/PDF_FUERA_DE_CARRETERA/MARINO/X15.pdf', accessed: '2026-10-27' },
+    SRC_I6,
+  ],
+  style: { block: '#3a3f45', head: '#41474e', cover: '#1b1d20', accent: '#d8262c', coverStyle: 'smooth' },
+  assets: { provisional: true },
+  notes: [
+    'Mayor cilindrada del catálogo junto al C15: 14.9 L con carrera larga (169 mm).',
+    'Distribución en cabeza con un árbol (representación aproximada) y tren de engranajes frontal (aproximado).',
+    'Biela, paso entre cilindros, reglaje y colores: estimaciones; no son datos de Cummins.',
+  ],
+};

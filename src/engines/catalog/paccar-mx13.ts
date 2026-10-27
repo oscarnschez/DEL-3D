@@ -1,0 +1,58 @@
+import type { EngineDefinition } from '../schema';
+import { approxGeometry, GENERIC_VALVES, hp, lbft, SRC_I6 } from './common';
+
+export const paccarMX13: EngineDefinition = {
+  id: 'paccar-mx13',
+  manufacturer: 'PACCAR',
+  model: 'MX-13',
+  variant: 'MX-13 EPA 2021 (Norteamérica)',
+  year: '2021',
+  cylinders: 6,
+  layout: 'inline',
+  firingOrder: [1, 5, 3, 6, 2, 4],
+  firingOrderStatus: 'aproximado',
+  geometry: approxGeometry(130, 162, 18.5),
+  valvetrain: { camLocation: 'block', camshafts: 1, valvesPerCylinder: 4, ...GENERIC_VALVES, gearTrain: 'rear' },
+  injection: {
+    system: 'common-rail',
+    event: { soiBTDC: 8, duration: 26, pilotAdvance: 12 },
+    fuelPath: ['Tanque', 'Bomba de alimentación', 'Filtros', 'Dos bombas de alta presión en el bloque', 'Riel común', 'Inyectores', 'Cámara'],
+    description: 'Riel común con dos unidades de bomba de alta presión integradas en el bloque, hasta 2,500 bar (hoja DAF MX-13 Euro 6). Calado y duración mostrados: educativos.',
+  },
+  air: {
+    turbo: 'vgt',
+    egr: true,
+    aftertreatment: ['DOC', 'DPF', 'SCR'],
+    description: 'Un solo turbo de tobera variable (suministrado por Cummins según HDT), EGR, filtro de partículas activo y SCR.',
+  },
+  rpm: { idle: 600, max: 2200, ratedPower: 1700, peakTorque: 1000, status: 'aproximado' },
+  nominal: { powerKw: hp(510), torqueNm: lbft(1850), status: 'verificado' },
+  specs: [
+    { key: 'configuration', label: 'Configuración', value: '6 cilindros en línea, 4 válvulas/cil.', status: 'verificado', sourceId: 'mx13-2021' },
+    { key: 'displacement', label: 'Cilindrada', value: '12.9 L', status: 'verificado', sourceId: 'mx13-2021' },
+    { key: 'boreStroke', label: 'Diámetro × carrera', value: '130 × 162 mm', status: 'verificado', sourceId: 'mx13-2021' },
+    { key: 'power', label: 'Potencia', value: '405–510 hp', status: 'verificado', sourceId: 'mx13-2021' },
+    { key: 'torque', label: 'Par máximo', value: '1,550–1,850 lb-ft a ~900–1,000 rpm', status: 'verificado', sourceId: 'mx13-2021' },
+    { key: 'rpmRange', label: 'Régimen gobernado', value: '2,200 rpm', status: 'verificado', sourceId: 'mx13-2021' },
+    { key: 'compressionRatio', label: 'Relación de compresión', value: '18.5:1 (MY24) / 19.4:1 (MY25), versión Euro 6', status: 'verificado', sourceId: 'mx13-daf', note: 'Dato de DAF (Europa); la hoja norteamericana no lo publica.' },
+    { key: 'injection', label: 'Inyección', value: 'Riel común, 2 bombas AP en el bloque, 2,500 bar (Euro 6)', status: 'verificado', sourceId: 'mx13-daf' },
+    { key: 'aspiration', label: 'Sobrealimentación', value: 'Un turbo de tobera variable', status: 'verificado', sourceId: 'mx13-hdt' },
+    { key: 'valvetrain', label: 'Distribución', value: 'Árbol en el bloque con varillas (OHV), engranajes traseros', status: 'verificado', sourceId: 'mx13-hdt' },
+    { key: 'other', label: 'Material del bloque y culata', value: 'Hierro de grafito compactado (CGI)', status: 'verificado', sourceId: 'mx13-hdt' },
+    { key: 'weight', label: 'Peso en seco', value: '2,500 lb', status: 'verificado', sourceId: 'mx13-2021' },
+    { key: 'firingOrder', label: 'Orden de encendido', value: '1-5-3-6-2-4', status: 'aproximado', sourceId: 'i6-firing' },
+  ],
+  sources: [
+    { id: 'mx13-2021', title: 'Peterbilt / PACCAR — MX-13 Spec Sheet 2021', url: 'https://www.peterbilt.com/static-assets/documents/resources/pac56_mx13specsheet_2021_final_digitalhires.pdf', accessed: '2026-10-27' },
+    { id: 'mx13-daf', title: 'DAF — PACCAR MX-13 Engines (Euro 6, MY2025)', url: 'https://www.daf.global/-/media/files/document-library/infosheets/engines/euro-6/mx-13/daf-paccar-mx-13-engines-en-my2025.pdf?rev=-1', accessed: '2026-10-27' },
+    { id: 'mx13-hdt', title: 'HDT Trucking Info — Test Drive: MX-13 in a Peterbilt 365', url: 'https://www.truckinginfo.com/articles/test-drive-mx-13-in-a-peterbilt-365', accessed: '2026-10-27' },
+    SRC_I6,
+  ],
+  style: { block: '#2c3036', head: '#33383f', cover: '#15171a', accent: '#c0c6cc', coverStyle: 'smooth' },
+  assets: { provisional: true },
+  notes: [
+    'Arquitectura distinta al resto: árbol de levas bajo en el bloque con taqués, varillas y balancines (OHV).',
+    'Tren de distribución trasero para reducir vibraciones torsionales (según HDT).',
+    'Mezcla de fuentes norteamericana (2021) y europea (DAF, Euro 6): cada dato indica su fuente.',
+  ],
+};
