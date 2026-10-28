@@ -35,7 +35,7 @@ await page.waitForTimeout(40000);
 console.log('programas compilados al cargar:', await page.evaluate(() => window.__prof.links));
 const reset = () => page.evaluate(() => { const p = window.__prof; p.links = 0; p.linkMs = 0; p.gaps = []; p.long = []; });
 const read = () => page.evaluate(() => { const p = window.__prof; return { links: p.links, linkMs: Math.round(p.linkMs), maxFrame: Math.round(Math.max(0, ...p.gaps)), maxLongTask: Math.round(Math.max(0, ...p.long)) }; });
-const click = (text) => page.getByRole('button', { name: text, exact: false }).first().evaluate((b) => b.click());
+const click = (text) => page.locator('button', { hasText: text }).first().evaluate((b) => b.click());
 const step = async (label, fn) => {
   await reset();
   await fn();

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
+import { isPartMaterial } from '@/interaction/Part';
 import { create } from 'zustand';
 
 /** Último precalentamiento terminado (la interfaz lo usa como indicador de «escena lista»). */
@@ -19,13 +20,13 @@ import { chamberParticleMaterial, flameVolumeMaterial, flowDropMaterial, flowTub
  * Con `KHR_parallel_shader_compile`, `compileAsync` no bloquea el hilo principal.
  */
 export function warmupShaders(gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera, postFx = false): Promise<unknown> {
-  // 1) Variante transparente de cada material de pieza (los de <Part> llevan `partData`).
+  // 1) Variante transparente de cada material de pieza (los clonados por <Part>).
   const flipped: THREE.Material[] = [];
   scene.traverse((o) => {
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh) return;
     for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
-      if (m.userData.partData && !m.transparent) {
+      if (isPartMaterial(m) && !m.transparent) {
         m.transparent = true;
         m.needsUpdate = true;
         flipped.push(m);

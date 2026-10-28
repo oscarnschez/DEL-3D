@@ -64,6 +64,9 @@ interface MatData {
 
 const matData = new WeakMap<THREE.Material, MatData>();
 
+/** ¿Es un material clonado por <Part>? (el precalentamiento compila su variante transparente). */
+export const isPartMaterial = (m: THREE.Material) => matData.has(m);
+
 /** ¿Hay interior a la vista? (entonces las piezas internas también proyectan sombra) */
 function interiorVisible(v: ViewParams): boolean {
   return v.mode !== 'exterior' && v.mode !== 'termica' ? true : v.transparency > 0.05 || v.explode > 0 || Object.values(v.removed).some(Boolean);

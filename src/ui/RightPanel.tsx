@@ -9,6 +9,7 @@ import { sim } from '@/core/simulation/clock';
 import { cameraApi } from '@/camera/CameraRig';
 import { useSimSnapshot } from './useSimSnapshot';
 import { CycleDial } from './CycleDial';
+import { CycleChart } from './CycleChart';
 
 type Tab = 'ficha' | 'pieza' | 'datos';
 
@@ -303,6 +304,8 @@ function Dashboard() {
           <Gauge key={k} r={get(k)} />
         ))}
       </div>
+      <div className="section-title">Ciclo del cilindro (presión, válvulas e inyección)</div>
+      <CycleChart />
       <div className="section-title">Gráfica en tiempo real</div>
       <LiveChart />
       <div className="section-title">Origen de los valores</div>
