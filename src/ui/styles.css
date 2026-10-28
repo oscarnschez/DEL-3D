@@ -247,6 +247,7 @@ input[type='range']::-moz-range-thumb { width: 12px; height: 12px; border-radius
 .cmp-table th, .cmp-table td { text-align: left; padding: 7px 6px; border-bottom: 1px dashed var(--line); vertical-align: top; }
 .cmp-table th { color: var(--muted); font-weight: 500; font-size: 11px; width: 28%; }
 .cmp-table td .badge { margin-top: 3px; }
+.cmp-loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 13px; pointer-events: none; }
 .cmp-names { position: absolute; top: 10px; left: 0; right: 0; display: flex; justify-content: space-around; pointer-events: none; }
 .cmp-names div { background: rgba(10,12,15,.8); border: 1px solid var(--line-2); padding: 5px 10px; border-radius: 8px; font-size: 12px; }
 

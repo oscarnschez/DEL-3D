@@ -1,6 +1,6 @@
-import { Suspense, useMemo } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
 import { CameraControls, Environment, Lightformer } from '@react-three/drei';
 import { useApp } from '@/state/store';
 import { ENGINES, getEngine } from '@/engines/catalog';
@@ -44,12 +44,46 @@ function cell(def: EngineDefinition, key: SpecKey) {
   );
 }
 
+/**
+ * El comparador usa su propio contexto WebGL, así que todos sus shaders se compilan al abrirlo.
+ * Los motores se mantienen ocultos hasta que `compileAsync` termina (sin bloquear la interfaz
+ * cuando el navegador soporta KHR_parallel_shader_compile).
+ */
+function CompileGate({ onReady }: { onReady: () => void }) {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  useEffect(() => {
+    let cancelled = false;
+    let raf = 0;
+    let frames = 0;
+    const tick = () => {
+      if (cancelled) return;
+      if (++frames < 3 || !scene.environment) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+      void gl.compileAsync(scene, camera).then(() => !cancelled && onReady());
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+    };
+  }, [gl, scene, camera, onReady]);
+  return null;
+}
+
 /** Comparador de dos motores con vista 3D lado a lado (misma escala, misma cámara, mismo ángulo de cigüeñal). */
 export default function Comparator() {
   const ids = useApp((s) => s.compareIds);
   const set = useApp((s) => s.set);
   const a = getEngine(ids[0]);
   const b = getEngine(ids[1]);
+  const pairKey = `${a.id}|${b.id}`;
+  const [readyKey, setReadyKey] = useState<string | null>(null);
+  const ready = readyKey === pairKey;
+  const markReady = useCallback(() => setReadyKey(pairKey), [pairKey]);
   const gap = useMemo(() => {
     const La = deriveLayout(a);
     const Lb = deriveLayout(b);
@@ -103,12 +137,15 @@ export default function Comparator() {
                 <Lightformer form="rect" intensity={1.2} position={[4, 1, 0]} rotation-y={-Math.PI / 2} scale={[4, 1.2, 1]} />
               </Environment>
               <Suspense fallback={null}>
-                <group position={[0, 0, -gap]}>
-                  <EngineModel key={`a-${a.id}`} def={a} />
+                <group visible={ready}>
+                  <group position={[0, 0, -gap]}>
+                    <EngineModel key={`a-${a.id}`} def={a} />
+                  </group>
+                  <group position={[0, 0, gap]}>
+                    <EngineModel key={`b-${b.id}`} def={b} />
+                  </group>
                 </group>
-                <group position={[0, 0, gap]}>
-                  <EngineModel key={`b-${b.id}`} def={b} />
-                </group>
+                {!ready && <CompileGate key={pairKey} onReady={markReady} />}
               </Suspense>
               <mesh rotation-x={-Math.PI / 2} position={[0, -0.32, 0]} receiveShadow>
                 <planeGeometry args={[14, 14]} />
@@ -116,6 +153,7 @@ export default function Comparator() {
               </mesh>
               <CameraControls makeDefault minDistance={0.4} maxDistance={8} />
             </Canvas>
+            {!ready && <div className="cmp-loading">Preparando vista 3D…</div>}
             <div className="cmp-names">
               <div>
                 {a.manufacturer} {a.model}
