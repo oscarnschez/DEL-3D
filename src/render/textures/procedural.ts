@@ -240,9 +240,9 @@ export function generateFinish(id: FinishId, size: number): TextureSet {
       for (let i = 0; i < size * size; i++) {
         const o = ox[i];
         // gris hierro → pardo óxido (sRGB), variación contenida (no «chatarra»)
-        const r = 0.36 + 0.2 * o;
-        const g = 0.33 + 0.08 * o;
-        const b = 0.32 - 0.06 * o;
+        const r = 0.3 + 0.06 * o;
+        const g = 0.29 + 0.025 * o;
+        const b = 0.29 - 0.01 * o;
         const k = 0.85 + 0.15 * h01[i];
         color[i * 4] = Math.round(r * k * 255);
         color[i * 4 + 1] = Math.round(g * k * 255);

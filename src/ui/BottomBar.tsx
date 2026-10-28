@@ -3,7 +3,7 @@ import { useApp, type CutMode, type StepSize } from '@/state/store';
 import { getEngine } from '@/engines/catalog';
 import { firingAngles, localCycleAngle, nextPhaseBoundary, phaseOf, PHASE_COLOR, PHASE_LABEL, type StrokePhase } from '@/core/kinematics/cycle';
 import { wrapDeg } from '@/core/kinematics/crank';
-import { sim } from '@/core/simulation/clock';
+import { advanceCrank, setCrankAngle, sim } from '@/core/simulation/clock';
 import { useSimSnapshot } from './useSimSnapshot';
 
 const SPEEDS = [1, 0.5, 0.25, 0.1, 0.03];
@@ -17,9 +17,10 @@ export function BottomBar() {
   const step = (dir: 1 | -1) => {
     useApp.getState().set({ paused: true });
     if (app.stepSize === 'fase') {
-      sim.angle = dir > 0 ? wrapDeg(nextPhaseBoundary(sim.angle, fa), 720) : wrapDeg(sim.angle - 30, 720);
+      if (dir > 0) advanceCrank(wrapDeg(nextPhaseBoundary(sim.angle, fa) - sim.angle, 720) || 720);
+      else advanceCrank(-30);
     } else {
-      sim.angle = wrapDeg(sim.angle + dir * app.stepSize, 720);
+      advanceCrank(dir * app.stepSize);
     }
   };
 
@@ -162,7 +163,7 @@ function CycleTimeline({ fireAngles, angle, focus }: { fireAngles: number[]; ang
   const drag = (clientX: number) => {
     const r = wrap.current!.getBoundingClientRect();
     const t = Math.max(0, Math.min(0.9999, (clientX - r.left) / r.width));
-    sim.angle = t * 720;
+    setCrankAngle(t * 720);
     useApp.getState().set({ paused: true });
   };
   const phi = localCycleAngle(angle, fireAngles[focus - 1]);

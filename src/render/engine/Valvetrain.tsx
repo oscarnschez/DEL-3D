@@ -77,7 +77,7 @@ export function Camshafts() {
   return (
     <Part id="camshaft">
       {shafts.map((sh, k) => (
-        <mesh key={k} ref={(m) => (refs.current[k] = m)} geometry={sh.geo} material={M.machinedSteel} position={[0, L.camY, sh.z]} />
+        <mesh key={k} ref={(m) => (refs.current[k] = m)} geometry={sh.geo} material={M.oiledSteel} position={[0, L.camY, sh.z]} />
       ))}
     </Part>
   );

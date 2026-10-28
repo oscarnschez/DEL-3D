@@ -53,14 +53,14 @@ export function Crankshaft() {
       <group ref={ref}>
         {/* muñones de bancada: uno entre cada par de cilindros y en los extremos (n + 1) */}
         {Array.from({ length: L.n + 1 }, (_, k) => (
-          <mesh key={`m${k}`} geometry={geo.main} material={M.machinedSteel} position={[L.cylX[0] - L.pitch / 2 + k * L.pitch, 0, 0]} />
+          <mesh key={`m${k}`} geometry={geo.main} material={M.oiledSteel} position={[L.cylX[0] - L.pitch / 2 + k * L.pitch, 0, 0]} />
         ))}
         {L.cylX.map((x, i) => {
           const off = -L.pinOffsets[i] * DEG;
           const dx = geo.pinLen / 2 + geo.webT / 2 + 0.0005;
           return (
             <group key={i} position={[x, 0, 0]} rotation={[off, 0, 0]}>
-              <mesh geometry={geo.pin} material={M.machinedSteel} position={[0, L.r, 0]} />
+              <mesh geometry={geo.pin} material={M.oiledSteel} position={[0, L.r, 0]} />
               <mesh geometry={geo.web} material={M.forgedSteel} position={[-dx, 0, 0]} />
               <mesh geometry={geo.web} material={M.forgedSteel} position={[dx, 0, 0]} />
             </group>
@@ -87,6 +87,14 @@ export function PistonsAndRods() {
       rings: ringsGeometry(L.bore, g.compressionHeight),
       pin: wristPinGeometry(L.bore),
       rod: rodGeometry(L.l, L.pinRadius, wristR, L.bore * 0.38),
+      // buje de bronce del pie de biela (casquillo prensado alrededor del bulón)
+      bushing: (() => {
+        const w = L.bore * 0.38 * 0.51;
+        const b = lathe([[wristR, -w], [wristR + 0.0035, -w], [wristR + 0.0035, w], [wristR, w]], 32);
+        b.rotateZ(-Math.PI / 2);
+        b.translate(0, L.l, 0);
+        return b;
+      })(),
       bolt: (() => {
         const b = journalGeometry(0.0065, 0.07, 12);
         b.rotateZ(Math.PI / 2);
@@ -126,6 +134,7 @@ export function PistonsAndRods() {
           <Part id="rod" index={i + 1}>
             <group ref={(el) => (rods.current[i] = el)}>
               <mesh geometry={geo.rod} material={M.forgedSteel} />
+              <mesh geometry={geo.bushing} material={M.bronze} />
               {[-1, 1].map((sgn) => (
                 <mesh key={sgn} geometry={geo.bolt} material={M.bolt} position={[0, -0.006, sgn * (L.pinRadius + 0.006)]} />
               ))}

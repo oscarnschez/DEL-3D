@@ -15,6 +15,7 @@ export const MODES: { id: ViewMode; label: string }[] = [
   { id: 'aire', label: 'Admisión y escape' },
   { id: 'despiece', label: 'Despiece' },
   { id: 'rayosx', label: 'Rayos X' },
+  { id: 'termica', label: 'Vista térmica' },
   { id: 'tecnico', label: 'Técnico' },
 ];
 

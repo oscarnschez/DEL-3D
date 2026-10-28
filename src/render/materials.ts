@@ -212,7 +212,7 @@ function build(detail: boolean) {
     /** Acero inoxidable cepillado (envolvente del postratamiento, enfriador de EGR). */
     stainless: std({ color: '#b6babe', metalness: 1, roughness: 0.27 }, { finish: 'sheet', scale: 14, normalScale: 0.6 }),
     /** Hierro de escape con pátina térmica moderada (óxido pardo). */
-    exhaustIron: std({ color: '#ffffff', metalness: 0.55, roughness: 0.86 }, { finish: 'patina', scale: 6, normalScale: 1.1, colorMap: true }),
+    exhaustIron: std({ color: '#ffffff', metalness: 0.4, roughness: 0.86 }, { finish: 'patina', scale: 6, normalScale: 1.1, colorMap: true }),
     rubber: std({ color: '#121315', metalness: 0, roughness: 0.86 }, { finish: 'rubber', scale: 30, normalScale: 0.6 }),
     /** Manguera de caucho (EPDM/silicona) negra. */
     hose: std({ color: '#17191c', metalness: 0, roughness: 0.72 }, { finish: 'rubber', scale: 24, normalScale: 0.7 }),

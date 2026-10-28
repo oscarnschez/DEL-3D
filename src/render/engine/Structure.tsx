@@ -263,7 +263,9 @@ export function ValveCover() {
     const rib = extrudeX(roundedRectShape(w * 1.5, 0.008, 0.003), 0.012, 0.002, 4);
     const flange = extrudeX(roundedRectShape(w * 2 + 0.012, 0.01, 0.003), len + 0.006, 0.002, 4);
     const lip = extrudeX(roundedRectShape(w * 0.9, 0.012, 0.005), len * 0.8, 0.003, 6);
-    return { body, rib, flange, lip, len, segs, y1 };
+    // junta de caucho entre tapa y culata (asoma bajo la pestaña)
+    const seal = extrudeX(roundedRectShape(w * 2 + 0.008, 0.003, 0.001), len + 0.002, 0.0005, 2);
+    return { body, rib, flange, lip, seal, len, segs, y1 };
   }, [L, d.headHalf, d.coverTop, style]);
   const bolts = useDisposable(() => {
     const items: { p: [number, number, number] }[] = [];
@@ -277,6 +279,7 @@ export function ValveCover() {
   return (
     <Part id="valveCover" shell>
       <mesh geometry={geo.flange} material={mat} position={[0, L.headTopY + 0.005, 0]} />
+      <mesh geometry={geo.seal} material={M.rubber} position={[0, L.headTopY + 0.0015, 0]} />
       {Array.from({ length: geo.segs }, (_, k) => (
         <mesh key={k} geometry={geo.body} material={mat} position={[geo.segs > 1 ? (k - 0.5) * (geo.len / 2) : 0, 0, 0]} />
       ))}
