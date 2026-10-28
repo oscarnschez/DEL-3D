@@ -5,6 +5,7 @@ import { useApp, type FlowSystem } from '@/state/store';
 import { sim } from '@/core/simulation/clock';
 import { useEngine } from '../engine/useEngine';
 import { flowPaths, type FlowPath } from './paths';
+import { flowParticleMaterial, flowTubeMaterial } from '../fxMaterials';
 
 const SYSTEMS: FlowSystem[] = ['lubricacion', 'combustible', 'refrigeracion', 'aire'];
 
@@ -53,19 +54,9 @@ function FlowLine({ path, system }: { path: FlowPath; system: FlowSystem }) {
     const count = Math.max(4, Math.round(length * (system === 'aire' ? 70 : 90)));
     return { curve, tube, count, length };
   }, [path, system]);
-  const tubeMat = useMemo(
-    () =>
-      new THREE.MeshBasicMaterial({
-        color: path.colors[Math.floor(path.colors.length / 2)],
-        transparent: true,
-        opacity: 0.16,
-        depthWrite: false,
-        toneMapped: false,
-      }),
-    [path.colors],
-  );
+  const tubeMat = useMemo(() => flowTubeMaterial(path.colors[Math.floor(path.colors.length / 2)]), [path.colors]);
   const pGeo = useMemo(() => new THREE.SphereGeometry(system === 'aire' ? 0.0085 : 0.0058, 8, 6), [system]);
-  const pMat = useMemo(() => new THREE.MeshBasicMaterial({ toneMapped: false }), []);
+  const pMat = useMemo(() => flowParticleMaterial(), []);
   const cols = useMemo(() => path.colors.map((c) => new THREE.Color(c)), [path.colors]);
   const ref = useRef<THREE.InstancedMesh>(null);
   const offset = useRef(Math.random());

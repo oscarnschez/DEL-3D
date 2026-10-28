@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo } from 'react';
+import { memo, Suspense, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { Canvas, useThree } from '@react-three/fiber';
 import { AdaptiveDpr, Environment, Grid, Lightformer, PerformanceMonitor, Stats } from '@react-three/drei';
@@ -11,11 +11,20 @@ import { TourPlayer } from '@/camera/tours';
 import { useSelection } from '@/interaction/selection';
 import { EngineModel } from './engine/EngineModel';
 import { sectionUniform } from './materials';
-import { CombustionView } from './combustion/CombustionView';
+import { ChamberLight, CombustionView } from './combustion/CombustionView';
+import { ShaderWarmup } from './warmup';
 import { Flows } from './fluids/Flows';
 import { Labels } from './Labels';
 
-/** Planos de corte globales (renderer.clippingPlanes) según la herramienta activa. */
+/** Plano que no recorta nada: mantiene constante el número de planos de corte. */
+const NO_CUT = new THREE.Plane(new THREE.Vector3(0, 1, 0), 1e4);
+
+/**
+ * Planos de corte globales (renderer.clippingPlanes) según la herramienta activa.
+ * Siempre hay exactamente un plano: el número de planos forma parte de la clave de cada shader,
+ * así que pasar de 0 a 1 recompilaba todos los materiales de la escena (congelamiento al entrar
+ * en COMBUSTIÓN, TÉCNICO o al usar el corte).
+ */
 function CutController() {
   const gl = useThree((s) => s.gl);
   const cut = useApp((s) => s.cut);
@@ -24,7 +33,7 @@ function CutController() {
   const engineId = useApp((s) => s.engineId);
   const L = useMemo(() => deriveLayout(getEngine(engineId)), [engineId]);
   useEffect(() => {
-    let planes: THREE.Plane[] = [];
+    let planes: THREE.Plane[] = [NO_CUT];
     if (cut === 'longitudinal') planes = [new THREE.Plane(new THREE.Vector3(0, 0, -1), offset * 0.3)];
     else if (cut === 'transversal') planes = [new THREE.Plane(new THREE.Vector3(-1, 0, 0), offset * (L.blockLength / 2 + 0.1))];
     else if (cut === 'cilindro') planes = [new THREE.Plane(new THREE.Vector3(-1, 0, 0), L.cylX[focus - 1] ?? 0)];
@@ -33,12 +42,16 @@ function CutController() {
       planes = [new THREE.Plane(n, offset * 0.45)];
     }
     gl.clippingPlanes = planes;
-    sectionUniform.value = planes.length ? 1 : 0;
+    sectionUniform.value = planes[0] === NO_CUT ? 0 : 1;
   }, [cut, offset, focus, gl, L]);
   return null;
 }
 
-function Studio() {
+/**
+ * Iluminación y entorno. Memorizado: <Environment> vuelve a renderizar su cubemap y a generar el
+ * PMREM cada vez que se re-renderiza, y antes eso ocurría en cada cambio de modo.
+ */
+const Studio = memo(function Studio() {
   return (
     <>
       <color attach="background" args={['#0b0d10']} />
@@ -84,9 +97,10 @@ function Studio() {
       />
     </>
   );
-}
+});
 
-export function Scene() {
+/** Memorizado: el padre (<Viewport>) se re-renderiza con cada cambio de modo o de subtítulo. */
+export const Scene = memo(function Scene() {
   const engineId = useApp((s) => s.engineId);
   const quality = useApp((s) => s.quality);
   const def = getEngine(engineId);
@@ -109,6 +123,7 @@ export function Scene() {
       <AdaptiveDpr pixelated={false} />
       <SimulationDriver />
       <Studio />
+      <ChamberLight />
       <CutController />
       <Suspense fallback={null}>
         <EngineModel key={def.id} def={def}>
@@ -117,9 +132,10 @@ export function Scene() {
           <Labels />
         </EngineModel>
       </Suspense>
+      <ShaderWarmup token={def.id} />
       <CameraRig />
       <TourPlayer />
       {import.meta.env.DEV && new URLSearchParams(location.search).has('stats') && <Stats />}
     </Canvas>
   );
-}
+});
