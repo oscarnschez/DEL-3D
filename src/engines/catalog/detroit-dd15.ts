@@ -1,5 +1,5 @@
 import type { EngineDefinition } from '../schema';
-import { approxGeometry, GENERIC_VALVES, hp, lbft, SRC_I6 } from './common';
+import { approxGeometry, GENERIC_VALVES, hp, lbft, SRC_I6, SRC_PAINT_TPI } from './common';
 
 export const detroitDD15: EngineDefinition = {
   id: 'detroit-dd15',
@@ -45,12 +45,22 @@ export const detroitDD15: EngineDefinition = {
   sources: [
     { id: 'dd15-sheet', title: 'Detroit DD15 — Spec Sheet (Velocity Truck Centres)', url: 'https://www.velocitytruckcentres.com.au/s3/media/DD15SpecSheet.pdf', accessed: '2026-10-27' },
     SRC_I6,
+    { id: 'paint-dd-silver', title: 'Kimball Midwest — pintura «DD Silver» (equivalente a Detroit Diesel Silver)', url: 'https://www.kimballmidwest.com/80654', accessed: '2026-10-28' },
+    SRC_PAINT_TPI,
   ],
-  style: { block: '#7d858e', head: '#868e97', cover: '#25292e', accent: '#2f6fd6', coverStyle: 'split' },
+  style: {
+    block: '#a2a7ad', head: '#aab0b6', cover: '#25292e', accent: '#2f6fd6', coverStyle: 'split',
+    paint: {
+      summary: 'Bloque y culata plata/gris Detroit; tapa oscura',
+      status: 'aproximado',
+      note: 'Existe pintura de reposición comparada con «Detroit Diesel Silver», pero sin indicar modelo; una fuente secundaria describe los Detroit como azules (sin citar modelos) y el verde «Alpine Green» corresponde a series antiguas. No se localizó una fuente de Detroit para el DD15: el plata es la opción más probable, pendiente de confirmar con foto de fábrica.',
+      sourceIds: ['paint-dd-silver', 'paint-tpi'],
+    },
+  },
   assets: { provisional: true },
   notes: [
     'Único del catálogo con doble árbol de levas en cabeza y turbo-compound acoplado al tren de engranajes trasero.',
     'Generaciones posteriores del DD15 cambiaron el sistema de aire; esta ficha corresponde a la hoja citada.',
-    'Biela, paso entre cilindros, reglaje y colores: estimaciones.',
+    'Biela, paso entre cilindros y reglaje: estimaciones. Colores: ver «Pintura de fábrica».',
   ],
 };
