@@ -157,7 +157,7 @@ function DualRenderer({ sides, sync, onReady }: { sides: [Side, Side]; sync: { r
         // relación de aspecto real de cada mitad antes de encuadrar
         if (s.el && s.el.clientHeight > 0) s.camera.aspect = s.el.clientWidth / s.el.clientHeight;
         s.camera.updateProjectionMatrix();
-        const d = fitDistance(sph.radius, s.camera.fov, s.camera.aspect, 0.95);
+        const d = fitDistance(sph.radius, s.camera.fov, s.camera.aspect, 1.12);
         const dir = new THREE.Vector3(-1.25, 0.75, 1.35).normalize().multiplyScalar(d);
         void s.controls?.setLookAt(sph.center.x + dir.x, sph.center.y + dir.y, sph.center.z + dir.z, sph.center.x, sph.center.y, sph.center.z, false);
       }

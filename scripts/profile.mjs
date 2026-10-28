@@ -43,8 +43,13 @@ const step = async (label, fn) => {
   console.log(label.padEnd(28), JSON.stringify(await read()));
 };
 await step('ENCENDER', () => click('ENCENDER MOTOR'));
-const modes = (process.env.MODES ?? 'INTERIOR,COMBUSTIÓN,LUBRICACIÓN,COMBUSTIBLE,REFRIGERACIÓN,ADMISIÓN Y ESCAPE,DESPIECE,RAYOS X,TÉCNICO,EXTERIOR,COMBUSTIÓN,RAYOS X,EXTERIOR').split(',');
+const modes = (process.env.MODES ?? 'INTERIOR,COMBUSTIÓN,LUBRICACIÓN,COMBUSTIBLE,REFRIGERACIÓN,ADMISIÓN Y ESCAPE,DESPIECE,RAYOS X,TÉCNICO,VISTA TÉRMICA,EXTERIOR,COMBUSTIÓN,RAYOS X,EXTERIOR').split(',');
 for (const m of modes) await step(m, () => click(m));
+for (const l of ['laboratorio', 'cine', 'estudio']) await step(`iluminación: ${l}`, () => page.evaluate((x) => window.__del.useSettings.getState().set({ lighting: x }), l));
+await step('etiquetas', () => page.evaluate(() => window.__del.useApp.getState().set({ labels: true })));
+await step('recorrido: combustión', () => page.evaluate(() => window.__del.useApp.getState().set({ tour: 'combustion' })));
+await step('cancelar recorrido', () => page.evaluate(() => window.__del.useApp.getState().set({ tour: null })));
+await step('despiece por grupo: turbo', () => page.evaluate(() => window.__del.useApp.getState().set({ explodeGroup: 'turbo', explode: 1 })));
 await step('motor: detroit-dd15', () => page.evaluate(() => window.__del.useApp.getState().set({ engineId: 'detroit-dd15' })));
 await step('motor: volvo-d13', () => page.evaluate(() => window.__del.useApp.getState().set({ engineId: 'volvo-d13' })));
 await step('seleccionar pieza', () => page.evaluate(() => window.__del.useSelection.getState().select('turbo')));

@@ -401,3 +401,4 @@ kbd { font-family: var(--mono); font-size: 11px; padding: 1px 6px; border-radius
 .cmp-table table { table-layout: fixed; }
 .cmp-table td, .cmp-table th { word-break: break-word; overflow-wrap: anywhere; }
 .cmp-body { grid-template-columns: 1fr 460px; }
+.caption { bottom: 64px; z-index: 4; }
