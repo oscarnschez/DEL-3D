@@ -21,6 +21,8 @@ interface Props {
   clock?: SimState;
   /** Publica las piezas modeladas en `useModelInfo` (sólo la vista principal). */
   publish?: boolean;
+  /** Recibe las piezas modeladas (p. ej. el comparador, para buscar equivalencias). */
+  onParts?: (parts: PartId[]) => void;
   children?: React.ReactNode;
 }
 
@@ -31,7 +33,7 @@ export const useModelInfo = create<{ engineId: string | null; parts: PartId[] }>
  * Motor completo. Calcula una vez por frame el estado cinemático de todos los cilindros
  * a partir del ángulo del reloj (prioridad −1, después del reloj) y lo comparte por contexto.
  */
-export function EngineModel({ def, clock = mainClock, publish = false, children }: Props) {
+export function EngineModel({ def, clock = mainClock, publish = false, onParts, children }: Props) {
   const ctx = useMemo<EngineCtx>(() => {
     const L = deriveLayout(def);
     return { L, states: createStates(L.n), angle: { value: 0 }, modeled: new Set(), clock };
@@ -60,6 +62,10 @@ export function EngineModel({ def, clock = mainClock, publish = false, children 
     g.rotation.x = 0.0011 * k * Math.sin(orders);
     g.position.y = 0.00035 * k * Math.sin(orders + 1.1);
   }, -1);
+
+  useEffect(() => {
+    onParts?.([...ctx.modeled]);
+  }, [onParts, ctx]);
 
   useEffect(() => {
     if (!publish) return;

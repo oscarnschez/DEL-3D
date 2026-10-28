@@ -184,6 +184,7 @@ function TextureGenerator() {
 /** Memorizado: el padre (<Viewport>) se re-renderiza con cada cambio de modo o de subtítulo. */
 export const Scene = memo(function Scene({ onError }: { onError?: (msg: string) => void }) {
   const engineId = useApp((s) => s.engineId);
+  const comparing = useApp((s) => s.showComparator);
   const profile = useSettings((s) => s.profile);
   const P = PROFILES[profile];
   const def = getEngine(engineId);
@@ -193,6 +194,8 @@ export const Scene = memo(function Scene({ onError }: { onError?: (msg: string) 
   setMaterialDetail(P.detailMaps);
   return (
     <Canvas
+      // con el comparador abierto la vista principal no se dibuja (un único render activo)
+      frameloop={comparing ? 'never' : 'always'}
       shadows={P.shadows ? 'soft' : false}
       dpr={dpr}
       camera={{ position: [-1.2, 0.9, 1.3], fov: 38, near: 0.01, far: 50 }}

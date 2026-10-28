@@ -7,6 +7,9 @@ import { useSelection } from '@/interaction/selection';
 import { useSettings, reducedMotion } from '@/state/settings';
 import { useApp } from '@/state/store';
 import { useModelInfo } from '@/render/engine/EngineModel';
+import { fitDistance } from './fit';
+
+export { fitDistance };
 
 export type ViewPreset = 'iso' | 'frente' | 'admision' | 'escape' | 'superior' | 'inferior' | 'trasera';
 
@@ -35,13 +38,6 @@ const PRESETS: Record<ViewPreset, [number, number, number]> = {
 const _box = new THREE.Box3();
 const _sphere = new THREE.Sphere();
 const _dir = new THREE.Vector3();
-
-/** Distancia a la que una esfera de radio `r` cabe en el encuadre (vertical y horizontal). */
-export function fitDistance(r: number, fovDeg: number, aspect: number, margin = 1.08): number {
-  const vf = (fovDeg * Math.PI) / 180;
-  const hf = 2 * Math.atan(Math.tan(vf / 2) * aspect);
-  return (r * margin) / Math.sin(Math.min(vf, hf) / 2);
-}
 
 /** API imperativa de cámara usada por la interfaz y los recorridos. */
 export const cameraApi = {
