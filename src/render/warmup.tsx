@@ -5,7 +5,7 @@ import { create } from 'zustand';
 
 /** Último precalentamiento terminado (la interfaz lo usa como indicador de «escena lista»). */
 export const useWarmup = create<{ done: string | null }>(() => ({ done: null }));
-import { chamberParticleMaterial, flameMaterial, flowParticleMaterial, flowTubeMaterial, gasColumnMaterial, sprayMaterial } from './fxMaterials';
+import { chamberParticleMaterial, flameVolumeMaterial, flowDropMaterial, flowTubeMergedMaterial, gasColumnMaterial, sprayShaderMaterial } from './fxMaterials';
 
 /**
  * Precompila las variantes de shader que la app usará más adelante, para que el primer cambio
@@ -35,19 +35,26 @@ export function warmupShaders(gl: THREE.WebGLRenderer, scene: THREE.Scene, camer
 
   // 2) Materiales de efectos, sobre mallas temporales con los mismos atributos (instanciado, color por instancia).
   const fx = new THREE.Group();
+  const extra: THREE.BufferGeometry[] = [];
   const geo = new THREE.BoxGeometry(1e-3, 1e-3, 1e-3);
   const instanced = (mat: THREE.Material, colored: boolean) => {
     const im = new THREE.InstancedMesh(geo, mat, 1);
     if (colored) im.setColorAt(0, new THREE.Color());
     return im;
   };
+  const tubeMesh = () => {
+    const g = geo.clone();
+    g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 3), 3));
+    extra.push(g);
+    return new THREE.Mesh(g, flowTubeMergedMaterial());
+  };
   fx.add(
     new THREE.Mesh(geo, gasColumnMaterial()),
-    new THREE.Mesh(geo, flameMaterial()),
-    new THREE.Mesh(geo, flowTubeMaterial('#ffffff')),
-    instanced(sprayMaterial(), false),
+    new THREE.Mesh(geo, flameVolumeMaterial()),
+    tubeMesh(),
+    instanced(sprayShaderMaterial(), false),
     instanced(chamberParticleMaterial(), true),
-    instanced(flowParticleMaterial(), true),
+    instanced(flowDropMaterial(), true),
   );
   scene.add(fx);
 
@@ -78,6 +85,7 @@ export function warmupShaders(gl: THREE.WebGLRenderer, scene: THREE.Scene, camer
   // Los materiales temporales no se liberan: `dispose()` borraría también los programas compilados.
   return done.finally(() => {
     geo.dispose();
+    extra.forEach((g) => g.dispose());
     rt?.dispose();
   });
 }

@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
+import { useSettings } from '@/state/settings';
+import { PROFILES } from '../quality/profiles';
+import { useDisposable } from '../resources';
 import { Html } from '@react-three/drei';
 import { useApp } from '@/state/store';
 import { gasState, tempColor } from '@/core/kinematics/thermo';
 import { wrapDeg } from '@/core/kinematics/crank';
 import { phaseOf, PHASE_LABEL } from '@/core/kinematics/cycle';
-import { sim } from '@/core/simulation/clock';
 import { cameraApi } from '@/camera/CameraRig';
 import { useEngine } from '../engine/useEngine';
 import { auxLayout } from '../engine/Systems';
-import { chamberParticleMaterial, flameMaterial, gasColumnMaterial, sprayMaterial } from '../fxMaterials';
+import { chamberParticleMaterial, flameVolumeMaterial, gasColumnMaterial, sprayShaderMaterial } from '../fxMaterials';
 
 const tmp = { r: 0, g: 0, b: 0 };
 const M4 = new THREE.Matrix4();
@@ -20,6 +22,9 @@ const S = new THREE.Vector3();
 const C = new THREE.Color();
 const DOWN = new THREE.Vector3(0, -1, 0);
 const DIR = new THREE.Vector3();
+const CAM = new THREE.Vector3();
+/** Relación de remolino (vueltas del aire por vuelta de cigüeñal), valor típico educativo. */
+const SWIRL_RATIO = 1.5;
 
 /** Luz de la llama, compartida con <ChamberLight>. */
 const chamberLight: { current: THREE.PointLight | null } = { current: null };
@@ -71,17 +76,13 @@ export function CombustionView() {
 }
 
 function GasColumns() {
-  const { L, states } = useEngine();
-  const geo = useMemo(() => {
+  const { L, states, clock: sim } = useEngine();
+  const geo = useDisposable(() => {
     const g = new THREE.CylinderGeometry(L.bore / 2 - 0.0015, L.bore / 2 - 0.0015, 1, 40, 1, true);
     g.translate(0, 0.5, 0);
     return g;
   }, [L]);
-  const mats = useMemo(
-    () =>
-      L.cylX.map(() => gasColumnMaterial()),
-    [L],
-  );
+  const mats = useDisposable(() => L.cylX.map(() => gasColumnMaterial()), [L]);
   const refs = useRef<(THREE.Mesh | null)[]>([]);
   useFrame(() => {
     const boost = Math.min(2.8, 2.8 * sim.load * Math.min(1, sim.rpm / L.def.rpm.ratedPower) ** 1.3);
@@ -109,19 +110,20 @@ function GasColumns() {
 
 /** Chorros de combustible: 7 orificios, ángulo incluido ~150° (valor típico, educativo). */
 function SprayAll() {
-  const { L, states } = useEngine();
+  const { L, states, clock } = useEngine();
   const holes = 7;
-  const geo = useMemo(() => {
-    const g = new THREE.ConeGeometry(0.0065, 1, 10, 1, true);
+  const geo = useDisposable(() => {
+    const g = new THREE.ConeGeometry(0.0065, 1, 12, 6, true);
     g.translate(0, -0.5, 0); // ápice en el origen, eje −Y
     return g;
   }, []);
-  const mat = useMemo(() => sprayMaterial(), []);
+  const mat = useDisposable(() => sprayShaderMaterial(), []);
   const ref = useRef<THREE.InstancedMesh>(null);
   const tilt = (75 * Math.PI) / 180; // desde el eje del inyector
   useFrame(() => {
     const im = ref.current;
     if (!im) return;
+    mat.uniforms.uTime.value = clock.revs;
     let k = 0;
     for (let i = 0; i < L.n; i++) {
       const inj = states[i].injection;
@@ -142,7 +144,8 @@ function SprayAll() {
 }
 
 function ChamberDetail({ cyl }: { cyl: number }) {
-  const { L, states } = useEngine();
+  const { L, states, clock: sim } = useEngine();
+  const steps = PROFILES[useSettings((st) => st.profile)].flameSteps;
   const i = Math.max(0, Math.min(L.n - 1, cyl - 1));
   const A = useMemo(() => auxLayout(L), [L]);
   const N = 420;
@@ -154,10 +157,9 @@ function ChamberDetail({ cyl }: { cyl: number }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   const flame = useRef<THREE.Mesh>(null);
   const label = useRef<HTMLDivElement>(null);
-  const geo = useMemo(() => new THREE.SphereGeometry(1, 6, 4), []);
-  const mat = useMemo(() => chamberParticleMaterial(), []);
-  const flameMat = useMemo(() => flameMaterial(), []);
-  const swirl = useRef(0);
+  const geo = useDisposable(() => new THREE.SphereGeometry(1, 6, 4), []);
+  const mat = useDisposable(() => chamberParticleMaterial(), []);
+  const flameMat = useDisposable(() => flameVolumeMaterial(), []);
 
   // apagar la luz de combustión al salir del modo
   useEffect(
@@ -170,10 +172,10 @@ function ChamberDetail({ cyl }: { cyl: number }) {
   // acercamiento cinematográfico al cilindro observado
   useEffect(() => {
     const x = L.cylX[i];
-    void cameraApi.lookAt([x + 0.85, L.deckY + 0.02, 0.5], [x, L.deckY - 0.12, 0], true);
+    void cameraApi.lookAt([x + 0.42, L.deckY + 0.05, 0.3], [x, L.deckY - 0.035, 0], true);
   }, [i, L]);
 
-  useFrame((_, dt) => {
+  useFrame(({ camera }) => {
     const im = ref.current;
     if (!im) return;
     const s = states[i];
@@ -184,16 +186,15 @@ function ChamberDetail({ cyl }: { cyl: number }) {
     const gs = gasState(L, s.phi, sim.load, boost);
     const phase = phaseOf(s.phi);
     const m = massFraction(s.phi);
-    // remolino (swirl) inducido en la admisión, decae en la expansión
-    const swirlRate = phase === 'admision' || phase === 'compresion' ? 2.5 : 1.0;
-    swirl.current += dt * swirlRate * (0.2 + Math.min(1, sim.rpm / 600)) * (useApp.getState().paused ? 0 : 1);
+    // remolino (swirl) inducido por los conductos de admisión: función de las revoluciones
+    const swirl = sim.revs * Math.PI * 2 * SWIRL_RATIO;
     const R = L.bore / 2 - 0.004;
     for (let k = 0; k < N; k++) {
       const sd = seeds[k];
       let scale = 0.0022;
       if (sd.rank < m) {
-        const th = sd.th + swirl.current * (0.6 + 0.4 * sd.rho);
-        const jitter = Math.sin(sim.time * 7 + sd.j * 40) * 0.002;
+        const th = sd.th + swirl * (0.6 + 0.4 * sd.rho);
+        const jitter = Math.sin(sim.revs * 9 + sd.j * 40) * 0.002;
         P.set(x + Math.cos(th) * sd.rho * R + jitter, crown + 0.002 + sd.h * (H - 0.004), Math.sin(th) * sd.rho * R);
         // color: aire fresco (azul) → mezcla → gases quemados por temperatura
         const burnedP = sd.j < gs.burned;
@@ -220,21 +221,26 @@ function ChamberDetail({ cyl }: { cyl: number }) {
     }
     im.instanceMatrix.needsUpdate = true;
     if (im.instanceColor) im.instanceColor.needsUpdate = true;
-    // frente de llama: inicia en el borde de los chorros dentro de la cámara omega y se expande
+    // llama volumétrica: nace en el borde de los chorros (cámara omega) y se expande con la fracción quemada
     const fl = flame.current;
     if (fl) {
-      fl.position.set(x, crown - L.bore * 0.04, 0);
-      const c = s.combustion;
-      const grow = 0.3 + 0.7 * gs.burned;
-      fl.scale.set(L.bore * 0.42 * grow, Math.max(0.002, Math.min(H + L.bore * 0.05, L.bore * 0.25 * grow)), L.bore * 0.42 * grow);
-      flameMat.opacity = Math.min(0.85, c * 1.1);
-      tempColor(gs.T, tmp);
-      flameMat.color.setRGB(tmp.r, tmp.g * 0.85, tmp.b * 0.6);
+      const grow = 0.45 + 0.55 * gs.burned;
+      fl.position.set(x, crown + Math.min(H, L.bore * 0.2) * 0.45, 0);
+      fl.scale.set(L.bore * 0.48 * grow, Math.max(0.002, Math.min(H * 0.55 + 0.004, L.bore * 0.2)), L.bore * 0.48 * grow);
+      fl.updateMatrixWorld();
+      const u = flameMat.uniforms;
+      u.uTime.value = sim.revs;
+      u.uBurn.value = gs.burned;
+      u.uHeat.value = Math.min(1, s.combustion * 1.2);
+      u.uSwirl.value = swirl;
+      u.uSteps.value = steps;
+      u.uCam.value.copy(fl.worldToLocal(CAM.copy(camera.position)));
+      fl.visible = s.combustion > 0.002;
     }
     const light = chamberLight.current;
     if (light) {
       light.position.set(x, crown + 0.02, 0);
-      light.intensity = s.combustion * 3.5;
+      light.intensity = s.combustion * 1.4;
     }
     if (label.current) {
       label.current.innerHTML = `<b>Cilindro ${i + 1}</b> · ${PHASE_LABEL[phase]}<br/>φ = ${s.phi.toFixed(0)}° · T ≈ ${gs.T.toFixed(0)} K · p ≈ ${gs.p.toFixed(1)} bar<br/><span class="muted">Modelo termodinámico educativo</span>`;
@@ -244,8 +250,8 @@ function ChamberDetail({ cyl }: { cyl: number }) {
   return (
     <>
       <instancedMesh ref={ref} args={[geo, mat, N]} frustumCulled={false} renderOrder={7} />
-      <mesh ref={flame} material={flameMat} renderOrder={8}>
-        <sphereGeometry args={[1, 24, 16]} />
+      <mesh ref={flame} material={flameMat} renderOrder={8} frustumCulled={false}>
+        <icosahedronGeometry args={[1, 2]} />
       </mesh>
       <Html position={[L.cylX[i], L.deckY + 0.16, -0.05]} center className="chamber-label" zIndexRange={[20, 0]}>
         <div ref={label} />

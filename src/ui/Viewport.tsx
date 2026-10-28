@@ -3,6 +3,7 @@ import { getEngine } from '@/engines/catalog';
 import { Scene } from '@/render/Scene';
 import { cameraApi, VIEW_LABEL, type ViewPreset } from '@/camera/CameraRig';
 import { CycleDial } from './CycleDial';
+import { ThermalLegend } from './ThermalLegend';
 import { PHASE_COLOR, PHASE_LABEL } from '@/core/kinematics/cycle';
 
 export const MODES: { id: ViewMode; label: string }[] = [
@@ -61,6 +62,7 @@ export function Viewport() {
           </div>
         </div>
       )}
+      {mode === 'termica' && <ThermalLegend />}
       {caption && <div className="overlay caption">{caption}</div>}
       {def.assets.provisional && (
         <div className="overlay prov">
