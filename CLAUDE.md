@@ -57,4 +57,5 @@ i18n/es.ts      Textos de la interfaz (todo en español).
 - Geometrías y materiales se crean con `useMemo` y se reutilizan; usar instancing para piezas repetidas (tornillos, partículas).
 - No crear objetos en `useFrame` (reutilizar vectores/matrices temporales).
 - Identificadores de código en inglés; textos visibles en español vía `i18n/es.ts` o literales en español.
+- Evitar recompilaciones de shaders en caliente (congelan la app varios segundos en GPUs reales): no montar/desmontar luces (cambiar `intensity`), no cambiar el número de `gl.clippingPlanes` (siempre hay uno; `NO_CUT` cuando no hay corte), y definir los materiales de efectos nuevos en `render/fxMaterials.ts` y añadirlos a `render/warmup.tsx`. `node scripts/profile.mjs` cuenta los programas compilados en cada cambio de modo: debe dar 0.
 - Cada pieza seleccionable se registra con un `PartId` de `engines/parts.ts` (nombre, sistema, función, relaciones).

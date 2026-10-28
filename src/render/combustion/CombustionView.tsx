@@ -10,6 +10,7 @@ import { sim } from '@/core/simulation/clock';
 import { cameraApi } from '@/camera/CameraRig';
 import { useEngine } from '../engine/useEngine';
 import { auxLayout } from '../engine/Systems';
+import { chamberParticleMaterial, flameMaterial, gasColumnMaterial, sprayMaterial } from '../fxMaterials';
 
 const tmp = { r: 0, g: 0, b: 0 };
 const M4 = new THREE.Matrix4();
@@ -19,6 +20,29 @@ const S = new THREE.Vector3();
 const C = new THREE.Color();
 const DOWN = new THREE.Vector3(0, -1, 0);
 const DIR = new THREE.Vector3();
+
+/** Luz de la llama, compartida con <ChamberLight>. */
+const chamberLight: { current: THREE.PointLight | null } = { current: null };
+
+/**
+ * Luz puntual de la llama, montada siempre (intensidad 0 fuera del modo combustión).
+ * Añadir o quitar una luz cambia el número de luces de la escena y obliga a Three.js a
+ * recompilar los shaders de todos los materiales iluminados: eso congelaba la app al entrar
+ * en COMBUSTIÓN.
+ */
+export function ChamberLight() {
+  return (
+    <pointLight
+      ref={(l) => {
+        chamberLight.current = l;
+      }}
+      color="#ff8a2a"
+      distance={0.35}
+      decay={2}
+      intensity={0}
+    />
+  );
+}
 
 /** Masa relativa de gas en el cilindro (para hacer entrar/salir partículas). */
 function massFraction(phi: number): number {
@@ -55,9 +79,7 @@ function GasColumns() {
   }, [L]);
   const mats = useMemo(
     () =>
-      L.cylX.map(
-        () => new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, side: THREE.DoubleSide }),
-      ),
+      L.cylX.map(() => gasColumnMaterial()),
     [L],
   );
   const refs = useRef<(THREE.Mesh | null)[]>([]);
@@ -94,10 +116,7 @@ function SprayAll() {
     g.translate(0, -0.5, 0); // ápice en el origen, eje −Y
     return g;
   }, []);
-  const mat = useMemo(
-    () => new THREE.MeshBasicMaterial({ color: '#ffe27a', transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }),
-    [],
-  );
+  const mat = useMemo(() => sprayMaterial(), []);
   const ref = useRef<THREE.InstancedMesh>(null);
   const tilt = (75 * Math.PI) / 180; // desde el eje del inyector
   useFrame(() => {
@@ -134,15 +153,19 @@ function ChamberDetail({ cyl }: { cyl: number }) {
   }, []);
   const ref = useRef<THREE.InstancedMesh>(null);
   const flame = useRef<THREE.Mesh>(null);
-  const light = useRef<THREE.PointLight>(null);
   const label = useRef<HTMLDivElement>(null);
   const geo = useMemo(() => new THREE.SphereGeometry(1, 6, 4), []);
-  const mat = useMemo(() => new THREE.MeshBasicMaterial({ toneMapped: false, transparent: true, opacity: 0.9, depthWrite: false }), []);
-  const flameMat = useMemo(
-    () => new THREE.MeshBasicMaterial({ color: '#ff7a1a', transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }),
+  const mat = useMemo(() => chamberParticleMaterial(), []);
+  const flameMat = useMemo(() => flameMaterial(), []);
+  const swirl = useRef(0);
+
+  // apagar la luz de combustión al salir del modo
+  useEffect(
+    () => () => {
+      if (chamberLight.current) chamberLight.current.intensity = 0;
+    },
     [],
   );
-  const swirl = useRef(0);
 
   // acercamiento cinematográfico al cilindro observado
   useEffect(() => {
@@ -208,9 +231,10 @@ function ChamberDetail({ cyl }: { cyl: number }) {
       tempColor(gs.T, tmp);
       flameMat.color.setRGB(tmp.r, tmp.g * 0.85, tmp.b * 0.6);
     }
-    if (light.current) {
-      light.current.position.set(x, crown + 0.02, 0);
-      light.current.intensity = s.combustion * 3.5;
+    const light = chamberLight.current;
+    if (light) {
+      light.position.set(x, crown + 0.02, 0);
+      light.intensity = s.combustion * 3.5;
     }
     if (label.current) {
       label.current.innerHTML = `<b>Cilindro ${i + 1}</b> · ${PHASE_LABEL[phase]}<br/>φ = ${s.phi.toFixed(0)}° · T ≈ ${gs.T.toFixed(0)} K · p ≈ ${gs.p.toFixed(1)} bar<br/><span class="muted">Modelo termodinámico educativo</span>`;
@@ -223,7 +247,6 @@ function ChamberDetail({ cyl }: { cyl: number }) {
       <mesh ref={flame} material={flameMat} renderOrder={8}>
         <sphereGeometry args={[1, 24, 16]} />
       </mesh>
-      <pointLight ref={light} color="#ff8a2a" distance={0.35} decay={2} intensity={0} />
       <Html position={[L.cylX[i], L.deckY + 0.16, -0.05]} center className="chamber-label" zIndexRange={[20, 0]}>
         <div ref={label} />
       </Html>
