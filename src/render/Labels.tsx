@@ -1,7 +1,7 @@
-import { useMemo, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useMemo, useRef } from 'react';
+import { create } from 'zustand';
 import * as THREE from 'three';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import { useApp } from '@/state/store';
 import { useSettings } from '@/state/settings';
 import { PARTS, parsePartKey, type PartId } from '@/engines/parts';
@@ -21,6 +21,13 @@ interface LabelItem {
   prio: number;
 }
 
+/**
+ * Las etiquetas son DOM fuera del lienzo (el reconciliador de R3F no crea elementos HTML):
+ * <Labels> (dentro del lienzo) publica la lista y posiciona; <LabelLayer> (en el visor) las dibuja.
+ */
+export const useLabelItems = create<{ items: LabelItem[]; show: boolean }>(() => ({ items: [], show: false }));
+const labelEls: (HTMLButtonElement | null)[] = [];
+
 const MAX: Record<'baja' | 'media' | 'alta', number> = { baja: 6, media: 11, alta: 22 };
 const V = new THREE.Vector3();
 const C = new THREE.Vector3();
@@ -36,7 +43,6 @@ export function Labels() {
   const show = useApp((s) => s.labels || s.tour !== null);
   const density = useSettings((s) => s.labelDensity);
   const { L } = useEngine();
-  const gl = useThree((s) => s.gl);
   const items = useMemo<LabelItem[]>(() => {
     const A = auxLayout(L);
     const it = (id: PartId, p: [number, number, number], prio: number, follow: string = id, text = PARTS[id].name, sub?: string): LabelItem => ({ id, follow, text, sub, pos: new THREE.Vector3(...p), prio });
@@ -66,7 +72,10 @@ export function Labels() {
     ];
   }, [L]);
   const anchor = useRef<THREE.Group>(null);
-  const els = useRef<(HTMLButtonElement | null)[]>([]);
+  useEffect(() => {
+    useLabelItems.setState({ items, show });
+  }, [items, show]);
+  useEffect(() => () => useLabelItems.setState({ items: [], show: false }), []);
   const acc = useRef(1);
   const placed = useMemo(() => [] as [number, number, number, number][], []);
 
@@ -107,7 +116,7 @@ export function Labels() {
     });
     placed.length = 0;
     for (const i of order) {
-      const el = els.current[i];
+      const el = labelEls[i];
       if (!el) continue;
       const it = items[i];
       const isSel = sel.selected !== null && parsePartKey(sel.selected).id === it.id;
@@ -138,32 +147,31 @@ export function Labels() {
     }
   });
 
-  const host = gl.domElement.parentElement;
+  return <group ref={anchor} />;
+}
+
+/** Capa DOM de las etiquetas (se monta en el visor, sobre el lienzo). */
+export function LabelLayer() {
+  const { items, show } = useLabelItems();
+  if (!show) return null;
   return (
-    <group ref={anchor}>
-      {show &&
-        host &&
-        createPortal(
-          <div className="label-layer" aria-label="Etiquetas de piezas">
-            {items.map((it, i) => (
-              <button
-                key={`${it.follow}-${it.text}`}
-                ref={(el) => {
-                  els.current[i] = el;
-                }}
-                className="tag3d-btn"
-                style={{ display: 'none' }}
-                onClick={() => useSelection.getState().select(it.follow.includes(':') ? it.follow : it.id)}
-                title={it.sub ? `${it.text}: ${it.sub}` : PARTS[it.id].function}
-              >
-                <span className="dot" />
-                {it.text}
-                {it.sub && <small>{it.sub}</small>}
-              </button>
-            ))}
-          </div>,
-          host,
-        )}
-    </group>
+    <div className="label-layer" aria-label="Etiquetas de piezas">
+      {items.map((it, i) => (
+        <button
+          key={`${it.follow}-${it.text}`}
+          ref={(el) => {
+            labelEls[i] = el;
+          }}
+          className="tag3d-btn"
+          style={{ display: 'none' }}
+          onClick={() => useSelection.getState().select(it.follow.includes(':') ? it.follow : it.id)}
+          title={it.sub ? `${it.text}: ${it.sub}` : PARTS[it.id].function}
+        >
+          <span className="dot" />
+          {it.text}
+          {it.sub && <small>{it.sub}</small>}
+        </button>
+      ))}
+    </div>
   );
 }

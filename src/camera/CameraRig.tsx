@@ -73,7 +73,7 @@ export const cameraApi = {
     const p = PRESETS[v];
     const t = this.bounds.center;
     _dir.set(p[0] - TARGET.x, p[1] - TARGET.y, p[2] - TARGET.z).normalize();
-    const d = fitDistance(this.bounds.radius, cam.fov, cam.aspect, 0.92);
+    const d = fitDistance(this.bounds.radius, cam.fov, cam.aspect, 0.8);
     void c.setLookAt(t.x + _dir.x * d, t.y + _dir.y * d, t.z + _dir.z * d, t.x, t.y, t.z, smooth && !reducedMotion());
   },
   lookAt(pos: THREE.Vector3Tuple, target: THREE.Vector3Tuple, smooth = true) {

@@ -4,10 +4,12 @@ import { useT } from '@/i18n';
 import { ErrorOverlay, LoadingOverlay, PerfHud, SceneBoundary } from './StatusOverlays';
 import { getEngine } from '@/engines/catalog';
 import { Scene } from '@/render/Scene';
+import { LabelLayer } from '@/render/Labels';
 import { cameraApi, VIEW_LABEL, type ViewPreset } from '@/camera/CameraRig';
 import { CycleDial } from './CycleDial';
 import { ThermalLegend } from './ThermalLegend';
 import { SelectionCard } from './SelectionCard';
+import { TourBar } from './TourBar';
 import { PHASE_COLOR, PHASE_LABEL } from '@/core/kinematics/cycle';
 
 export const MODES: { id: ViewMode; label: string }[] = [
@@ -39,10 +41,12 @@ export function Viewport() {
       <SceneBoundary>
         <Scene onError={setError} />
       </SceneBoundary>
+      <LabelLayer />
       <LoadingOverlay />
       {error && <ErrorOverlay message={error} />}
       <PerfHud />
       <SelectionCard />
+      <TourBar />
       <div className="overlay modes" role="tablist" aria-label="Modos de visualización">
         {MODES.map((m, i) => (
           <button key={m.id} role="tab" aria-selected={mode === m.id} className={`mode-btn ${mode === m.id ? 'on' : ''}`} onClick={() => setMode(m.id)} title={`${t(`mode.${m.id}`)} (${modeKey(i, m.id)})`}>

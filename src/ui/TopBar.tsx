@@ -3,7 +3,7 @@ import { useSettings, type LightingPreset, type UiMode } from '@/state/settings'
 import { getEngine } from '@/engines/catalog';
 import { useSelection } from '@/interaction/selection';
 import { cameraApi } from '@/camera/CameraRig';
-import { TOURS } from '@/camera/tours';
+import { MAIN_TOURS, TOURS } from '@/camera/tours';
 import { LIGHTING } from '@/render/lighting';
 import { useWarmup } from '@/render/warmup';
 import { useT } from '@/i18n';
@@ -63,11 +63,20 @@ export function TopBar({ onToggleLeft, onToggleRight, onSettings, onHelp }: { on
       <div className="top-tools">
         <select className="sel-tour" value={app.tour ?? ''} onChange={(e) => app.set({ tour: e.target.value || null, caption: null, tourPaused: false })} title={t('top.tours')} aria-label={t('top.tours')}>
           <option value="">{t('top.tours')}…</option>
-          {TOURS.map((tr) => (
-            <option key={tr.id} value={tr.id}>
-              {tr.label}
-            </option>
-          ))}
+          <optgroup label="Recorridos principales">
+            {MAIN_TOURS.map((id) => TOURS.find((x) => x.id === id)!).map((tr) => (
+              <option key={tr.id} value={tr.id}>
+                {tr.label}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="Más recorridos">
+            {TOURS.filter((x) => !MAIN_TOURS.includes(x.id)).map((tr) => (
+              <option key={tr.id} value={tr.id}>
+                {tr.label}
+              </option>
+            ))}
+          </optgroup>
         </select>
         <button className={`btn ${app.showComparator ? 'on' : ''}`} onClick={() => app.set({ showComparator: true })} title={t('top.compare')}>
           <Icon name="compare" size={15} /> <span className="lbl">{t('top.compare')}</span>
