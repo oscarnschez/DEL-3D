@@ -153,3 +153,10 @@ export const flowDropMaterial = () => {
   m.customProgramCacheKey = () => 'flowDrop';
   return m;
 };
+
+/** Indicador del plano de corte dinámico (relleno muy tenue). */
+export const cutGizmoMaterial = () =>
+  new THREE.MeshBasicMaterial({ color: '#37C8D6', transparent: true, opacity: 0.07, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+
+/** Contorno del plano de corte dinámico. */
+export const cutEdgeMaterial = () => new THREE.LineBasicMaterial({ color: '#37C8D6', transparent: true, opacity: 0.85, toneMapped: false });

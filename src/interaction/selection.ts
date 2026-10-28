@@ -10,6 +10,8 @@ export interface SelectionState {
   showRelated: boolean;
   /** Selección de un sistema completo (resalta todas sus piezas). */
   systemSel: SystemId | null;
+  /** Cómo se muestran las piezas no seleccionadas: atenuadas (opacas, oscurecidas) o transparentes. */
+  surround: 'atenuado' | 'transparente';
   /** Ver el movimiento individual: sólo la pieza seleccionada y las relacionadas se animan resaltadas. */
   select: (k: PartKey | null) => void;
   hover: (k: PartKey | null) => void;
@@ -30,6 +32,7 @@ export const createSelectionStore = (): SelectionStore => create<SelectionState>
   isolate: false,
   showRelated: false,
   systemSel: null,
+  surround: 'atenuado',
   select: (k) => set({ selected: k, systemSel: null }),
   hover: (k) => set({ hovered: k }),
   toggleHidden: (id) =>
@@ -53,17 +56,17 @@ export const createSelectionStore = (): SelectionStore => create<SelectionState>
 
 export const useSelection = createSelectionStore();
 
-export type PartVisualState = 'normal' | 'selected' | 'related' | 'dimmed' | 'isolatedOut' | 'hidden' | 'ghost';
+export type PartVisualState = 'normal' | 'selected' | 'related' | 'dimmed' | 'faded' | 'isolatedOut' | 'hidden' | 'ghost';
 
 /** Estado visual de una pieza según la selección actual (función pura, usada por <Part>). */
 export function visualStateFor(
   id: PartId,
   index: number | undefined,
-  s: Pick<SelectionState, 'selected' | 'hidden' | 'ghosted' | 'isolate' | 'showRelated' | 'systemSel'>,
+  s: Pick<SelectionState, 'selected' | 'hidden' | 'ghosted' | 'isolate' | 'showRelated' | 'systemSel'> & { surround?: SelectionState['surround'] },
 ): PartVisualState {
   if (s.hidden.has(id)) return 'hidden';
   if (s.systemSel) {
-    return PARTS[id].system === s.systemSel ? 'selected' : s.isolate ? 'isolatedOut' : 'dimmed';
+    return PARTS[id].system === s.systemSel ? 'selected' : s.isolate ? 'isolatedOut' : s.surround === 'transparente' ? 'faded' : 'dimmed';
   }
   if (s.selected) {
     const sel = parsePartKey(s.selected);
@@ -71,7 +74,7 @@ export function visualStateFor(
     if (isSel) return 'selected';
     const related = PARTS[sel.id].related.includes(id) && (sel.index === undefined || index === undefined || sel.index === index);
     if (s.showRelated && related) return 'related';
-    return s.isolate ? 'isolatedOut' : 'dimmed';
+    return s.isolate ? 'isolatedOut' : s.surround === 'transparente' ? 'faded' : 'dimmed';
   }
   if (s.ghosted.has(id)) return 'ghost';
   return 'normal';

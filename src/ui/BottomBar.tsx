@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useT } from '@/i18n';
+import { availableGroups, EXPLODE_GROUPS, type ExplodeGroup } from '@/interaction/explode';
+import { useSelection } from '@/interaction/selection';
+import { useModelInfo } from '@/render/engine/EngineModel';
 import { Icon } from './icons';
 import { useApp, type CutMode, type StepSize } from '@/state/store';
 import { getEngine } from '@/engines/catalog';
@@ -47,6 +50,9 @@ export function BottomBar() {
       cut: s.cut,
       cutOffset: s.cutOffset,
       explode: s.explode,
+      explodeGroup: s.explodeGroup,
+      cutYaw: s.cutYaw,
+      cutPitch: s.cutPitch,
       transparency: s.transparency,
       focusCylinder: s.focusCylinder,
       set: s.set,
@@ -54,6 +60,9 @@ export function BottomBar() {
   );
   const def = getEngine(app.engineId);
   const fa = firingAngles(def.firingOrder);
+  const modeled = useModelInfo((s) => s.parts);
+  const groups = availableGroups(modeled);
+  const selected = useSelection((s) => s.selected);
 
   const step = (dir: 1 | -1) => {
     useApp.getState().set({ paused: true });
@@ -146,12 +155,28 @@ export function BottomBar() {
             <option value="libre">Plano libre</option>
           </select>
           {(app.cut === 'longitudinal' || app.cut === 'transversal' || app.cut === 'libre') && (
-            <input style={{ width: 90 }} type="range" min={-1} max={1} step={0.01} value={app.cutOffset} onChange={(e) => app.set({ cutOffset: Number(e.target.value) })} aria-label="Posición del plano de corte" />
+            <input style={{ width: 80 }} type="range" min={-1} max={1} step={0.01} value={app.cutOffset} onChange={(e) => app.set({ cutOffset: Number(e.target.value) })} aria-label="Posición del plano de corte" title="Posición del plano" />
+          )}
+          {app.cut === 'libre' && (
+            <>
+              <span className="ctrl-label" title="Giro del plano alrededor del eje vertical">Giro {app.cutYaw}°</span>
+              <input style={{ width: 70 }} type="range" min={0} max={180} step={1} value={app.cutYaw} onChange={(e) => app.set({ cutYaw: Number(e.target.value) })} aria-label="Giro del plano de corte" />
+              <span className="ctrl-label" title="Inclinación del plano">Incl. {app.cutPitch}°</span>
+              <input style={{ width: 70 }} type="range" min={-80} max={80} step={1} value={app.cutPitch} onChange={(e) => app.set({ cutPitch: Number(e.target.value) })} aria-label="Inclinación del plano de corte" />
+            </>
           )}
         </div>
 
         <div className="ctrl-group">
           <span className="ctrl-label">{t('bottom.explode')}</span>
+          <select value={app.explodeGroup} onChange={(e) => app.set({ explodeGroup: e.target.value as ExplodeGroup, explode: app.explode || 1 })} title="Qué se despieza" aria-label="Grupo de despiece">
+            {groups.map((g) => (
+              <option key={g} value={g} disabled={g === 'individual' && !selected}>
+                {EXPLODE_GROUPS.find((x) => x.id === g)!.label}
+                {g === 'individual' && !selected ? ' (seleccione una pieza)' : ''}
+              </option>
+            ))}
+          </select>
           <input style={{ width: 90 }} type="range" min={0} max={1} step={0.01} value={app.explode} onChange={(e) => app.set({ explode: Number(e.target.value) })} aria-label="Despiece" />
           <span className="ctrl-label">{t('bottom.transp')}</span>
           <input style={{ width: 80 }} type="range" min={0} max={0.95} step={0.01} value={app.transparency} onChange={(e) => app.set({ transparency: Number(e.target.value) })} aria-label="Transparencia" />

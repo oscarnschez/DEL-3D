@@ -18,6 +18,7 @@ import { EngineModel } from './engine/EngineModel';
 import { sectionUniform, setMaterialDetail } from './materials';
 import { ChamberLight, CombustionView } from './combustion/CombustionView';
 import { ShaderWarmup } from './warmup';
+import { cutEdgeMaterial, cutGizmoMaterial } from './fxMaterials';
 import { Flows } from './fluids/Flows';
 import { Labels } from './Labels';
 import { StudioRig } from './StudioRig';
@@ -61,6 +62,45 @@ function CutController() {
     sectionUniform.value = plane === NO_CUT ? 0 : 1;
   }, [cut, offset, yaw, pitch, focus, gl, L]);
   return null;
+}
+
+/**
+ * Indicador del plano de corte libre: rectángulo tenue con contorno, desplazado 2 mm hacia el lado
+ * visible para no quedar recortado por el propio plano. Siempre montado (se precompila).
+ */
+function CutGizmo() {
+  const cut = useApp((s) => s.cut);
+  const offset = useApp((s) => s.cutOffset);
+  const yaw = useApp((s) => s.cutYaw);
+  const pitch = useApp((s) => s.cutPitch);
+  const ref = useRef<THREE.Group>(null);
+  const res = useMemo(() => {
+    const plane = new THREE.PlaneGeometry(1.9, 1.3);
+    const edges = new THREE.EdgesGeometry(plane);
+    return { plane, edges, fill: cutGizmoMaterial(), edge: cutEdgeMaterial() };
+  }, []);
+  useEffect(
+    () => () => {
+      res.plane.dispose();
+      res.edges.dispose();
+    },
+    [res],
+  );
+  useEffect(() => {
+    const g = ref.current;
+    if (!g) return;
+    const n = dynamicCutNormal(yaw, pitch);
+    const c = offset * 0.45;
+    // plano n·p + c = 0 → punto más cercano al origen: −c·n; +2 mm hacia el lado conservado (n·p + c > 0)
+    g.position.copy(n).multiplyScalar(-c + 0.002);
+    g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n);
+  }, [offset, yaw, pitch]);
+  return (
+    <group ref={ref} visible={cut === 'libre'} userData={{ warm: true }}>
+      <mesh geometry={res.plane} material={res.fill} renderOrder={9} />
+      <lineSegments geometry={res.edges} material={res.edge} renderOrder={9} />
+    </group>
+  );
 }
 
 /**
@@ -180,6 +220,7 @@ export const Scene = memo(function Scene({ onError }: { onError?: (msg: string) 
       <StudioRig />
       <ChamberLight />
       <CutController />
+      <CutGizmo />
       <ShadowScheduler />
       <Suspense fallback={null}>
         <EngineModel key={`${def.id}-${P.detailMaps ? 'd' : 'n'}`} def={def} publish>

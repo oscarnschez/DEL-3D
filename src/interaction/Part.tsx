@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import * as THREE from 'three';
+import { cameraApi } from '@/camera/CameraRig';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { parsePartKey, partKey, type PartId } from '@/engines/parts';
 import { patchSection } from '@/render/materials';
@@ -10,7 +11,7 @@ import { thermalColor, type ThermalKey } from '@/core/thermal/partTemps';
 import { reducedMotion } from '@/state/settings';
 import { visualStateFor } from './selection';
 import { explodeOffset, explodeSpec, inExplodeGroup, stepProgress, type Vec3 } from './explode';
-import { useViewEnv, type ViewParams } from './viewEnv';
+import { MAIN_ENV, useViewEnv, type ViewParams } from './viewEnv';
 
 /** Volúmenes simplificados sin cavidades internas: el corte los abre en vez de rayarlos. */
 const HOLLOW = new Set<PartId>(['block', 'head', 'valveCover', 'oilPan']);
@@ -106,7 +107,7 @@ export function Part({ id, index, shell, children, position }: PartProps) {
       const hovered = sel.hovered === key;
       const thermalMode = v.mode === 'termica';
       let opacity = 1;
-      if (vs === 'dimmed') opacity = 0.15;
+      if (vs === 'faded') opacity = 0.15;
       else if (vs === 'ghost') opacity = 0.2;
       else if (shell && vs !== 'selected' && vs !== 'related') opacity = 1 - v.transparency;
       if (v.mode === 'rayosx' && !shell && vs === 'normal') opacity = 0.62;
@@ -143,7 +144,11 @@ export function Part({ id, index, shell, children, position }: PartProps) {
               std.emissiveIntensity = emissive ? 1.15 : 0.9;
               if (std.color && d.color0) std.color.copy(d.color0).multiplyScalar(0.06);
             } else {
-              if (std.color && d.color0) std.color.copy(d.color0);
+              if (std.color && d.color0) {
+                std.color.copy(d.color0);
+                // atenuado: opaco pero oscurecido, para que la selección destaque sin perder contexto
+                if (vs === 'dimmed') std.color.multiplyScalar(0.28);
+              }
               if (emissive) {
                 std.emissive.copy(emissive);
                 std.emissiveIntensity = emissiveIntensity;
@@ -224,8 +229,15 @@ export function Part({ id, index, shell, children, position }: PartProps) {
     env.selection.getState().select(key);
   };
 
+  // doble clic: encuadra la pieza aunque ya estuviera seleccionada
+  const onDouble = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    env.selection.getState().select(key);
+    if (env === MAIN_ENV) cameraApi.focusByName(key);
+  };
+
   return (
-    <group ref={outer} name={key} userData={{ partKey: key }} onPointerOver={onOver} onPointerOut={onOut} onClick={onClick}>
+    <group ref={outer} name={key} userData={{ partKey: key }} onPointerOver={onOver} onPointerOut={onOut} onClick={onClick} onDoubleClick={onDouble}>
       {children}
     </group>
   );
