@@ -46,12 +46,22 @@ export const cumminsX15: EngineDefinition = {
     { id: 'x15-stagev', title: 'Cummins — X15 (Stage V)', url: 'https://www.cummins.com/engines/x15-stage-v', accessed: '2026-10-27' },
     { id: 'x15-marine', title: 'Cummins — X15 Marine Propulsion and Auxiliary Engines (hoja técnica)', url: 'https://www.cumminsperu.pe/uploads/shares/PDF_FUERA_DE_CARRETERA/MARINO/X15.pdf', accessed: '2026-10-27' },
     SRC_I6,
+    { id: 'paint-cummins-apex', title: 'Pintura genuina Cummins Apex Red 3163075 (distribuidor Peterbilt)', url: 'https://ohiopeterbilt.com/products/3163075-paint', accessed: '2026-10-28' },
+    { id: 'paint-slashgear-red', title: 'SlashGear — Why Are Some Cummins Engines Colored Red?', url: 'https://www.slashgear.com/1952982/why-are-cummins-engines-colored-red/', accessed: '2026-10-28' },
   ],
-  style: { block: '#3a3f45', head: '#41474e', cover: '#1b1d20', accent: '#d8262c', coverStyle: 'smooth' },
+  style: {
+    block: '#9e1b1e', head: '#a52024', cover: '#1b1d20', accent: '#d8262c', coverStyle: 'smooth',
+    paint: {
+      summary: 'Bloque y culata rojo Cummins (tono «Apex Red»); tapa de balancines negra',
+      status: 'aproximado',
+      note: 'Cummins vende pintura genuina «Apex Red» (3163075) para igualar el rojo OEM de sus motores, y las fuentes secundarias asocian el rojo a la familia ISX, de la que deriva el X15. No se localizó una fuente de Cummins que confirme el color de todas las X15; el tono hexadecimal es una aproximación visual.',
+      sourceIds: ['paint-cummins-apex', 'paint-slashgear-red'],
+    },
+  },
   assets: { provisional: true },
   notes: [
     'Mayor cilindrada del catálogo junto al C15: 14.9 L con carrera larga (169 mm).',
     'Distribución en cabeza con un árbol (representación aproximada) y tren de engranajes frontal (aproximado).',
-    'Biela, paso entre cilindros, reglaje y colores: estimaciones; no son datos de Cummins.',
+    'Biela, paso entre cilindros y reglaje: estimaciones; no son datos de Cummins. Colores: ver «Pintura de fábrica».',
   ],
 };

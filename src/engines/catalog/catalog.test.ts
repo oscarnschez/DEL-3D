@@ -16,6 +16,11 @@ describe('catálogo de motores', () => {
         expect(src!.url).toMatch(/^https:\/\//);
       }
     });
+    it(`${e.id}: la pintura de fábrica cita fuentes existentes`, () => {
+      for (const id of e.style.paint.sourceIds) {
+        expect(e.sources.find((x) => x.id === id), `fuente de pintura ${id}`).toBeDefined();
+      }
+    });
     it(`${e.id}: orden de encendido válido`, () => {
       expect([...e.firingOrder].sort()).toEqual(Array.from({ length: e.cylinders }, (_, i) => i + 1));
     });

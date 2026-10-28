@@ -46,11 +46,19 @@ export const volvoD13: EngineDefinition = {
     { id: 'd13-brochure', title: 'Volvo Trucks — Volvo D13 Engine Brochure', url: 'https://www.volvotrucks.us/media/vtna/files/shared/powertrain/revised4147-101-volvo-d13-engine-brochure-low-res.pdf', accessed: '2026-10-27' },
     SRC_I6,
   ],
-  style: { block: '#4f565e', head: '#565e66', cover: '#1e2a38', accent: '#2a6fb5', coverStyle: 'stepped' },
+  style: {
+    block: '#4f565e', head: '#565e66', cover: '#1e2a38', accent: '#2a6fb5', coverStyle: 'stepped',
+    paint: {
+      summary: 'Gris neutro provisional (color de fábrica no verificado)',
+      status: 'aproximado',
+      note: 'No se localizó ninguna fuente (oficial ni secundaria) sobre el color de pintura de fábrica del D13 de camión. Se mantiene un gris neutro marcado como provisional hasta contar con una foto o especificación de Volvo.',
+      sourceIds: [],
+    },
+  },
   assets: { provisional: true },
   notes: [
     'Árbol de levas único en cabeza (SOHC) con balancines: así lo indica el folleto.',
     'Comparte diámetro y carrera (131 × 158 mm) con el Mack MP8.',
-    'Tren de engranajes trasero, biela, paso, reglaje y colores: estimaciones.',
+    'Tren de engranajes trasero, biela, paso y reglaje: estimaciones. Colores: ver «Pintura de fábrica».',
   ],
 };

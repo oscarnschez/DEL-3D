@@ -117,6 +117,29 @@ function SpecSheet() {
       <div className="section-title">Inyección y aire</div>
       <p className="muted" style={{ fontSize: 12, lineHeight: 1.5, marginTop: 0 }}>{def.injection.description}</p>
       <p className="muted" style={{ fontSize: 12, lineHeight: 1.5 }}>{def.air.description}</p>
+      <div className="section-title">Pintura de fábrica</div>
+      <div className="spec">
+        <span className="k">
+          <span className="swatch" style={{ background: def.style.block }} />
+          <span className="swatch" style={{ background: def.style.cover }} />
+          {def.style.paint.summary}
+        </span>
+        <StatusBadge s={def.style.paint.status} />
+        <span className="n">{def.style.paint.note}</span>
+        {def.style.paint.sourceIds.map((id) => {
+          const so = src(id);
+          return (
+            so && (
+              <span className="n" key={id}>
+                Fuente:{' '}
+                <a href={so.url} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)' }}>
+                  {so.title}
+                </a>
+              </span>
+            )
+          );
+        })}
+      </div>
       {def.notes.length > 0 && (
         <>
           <div className="section-title">Notas</div>
