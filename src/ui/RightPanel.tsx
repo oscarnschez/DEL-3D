@@ -1,3 +1,4 @@
+import { useT } from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/state/store';
 import { getEngine } from '@/engines/catalog';
@@ -12,6 +13,7 @@ import { CycleDial } from './CycleDial';
 type Tab = 'ficha' | 'pieza' | 'datos';
 
 export function RightPanel() {
+  const t = useT();
   const [tab, setTab] = useState<Tab>('datos');
   const selected = useSelection((s) => s.selected);
   useEffect(() => {
@@ -21,13 +23,13 @@ export function RightPanel() {
     <aside className="panel right">
       <div className="tabs">
         <button className={`tab ${tab === 'ficha' ? 'on' : ''}`} onClick={() => setTab('ficha')}>
-          Ficha técnica
+          {t('right.sheet')}
         </button>
         <button className={`tab ${tab === 'pieza' ? 'on' : ''}`} onClick={() => setTab('pieza')}>
-          Pieza
+          {t('right.part')}
         </button>
         <button className={`tab ${tab === 'datos' ? 'on' : ''}`} onClick={() => setTab('datos')}>
-          Datos
+          {t('right.data')}
         </button>
       </div>
       <div className="panel-body">

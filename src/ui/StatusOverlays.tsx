@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Component, useEffect, useState, type ReactNode } from 'react';
 import { useWarmup } from '@/render/warmup';
 import { usePerf } from '@/render/perf';
 import { useTextureStatus } from '@/render/textures/library';
@@ -89,4 +89,16 @@ export function PerfHud() {
       </div>
     </div>
   );
+}
+
+/** Captura errores de la escena 3D (p. ej. WebGL no disponible) y muestra el estado de error. */
+export class SceneBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
+  state = { error: null as string | null };
+  static getDerivedStateFromError(e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { error: /webgl|context/i.test(msg) ? `Este navegador o equipo no pudo crear un contexto WebGL (${msg}). Active la aceleración por hardware o pruebe otro navegador.` : msg };
+  }
+  render() {
+    return this.state.error ? <ErrorOverlay message={this.state.error} /> : this.props.children;
+  }
 }

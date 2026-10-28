@@ -1,17 +1,58 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { useT } from '@/i18n';
+import { Icon } from './icons';
 import { useApp, type CutMode, type StepSize } from '@/state/store';
 import { getEngine } from '@/engines/catalog';
 import { firingAngles, localCycleAngle, nextPhaseBoundary, phaseOf, PHASE_COLOR, PHASE_LABEL, type StrokePhase } from '@/core/kinematics/cycle';
 import { wrapDeg } from '@/core/kinematics/crank';
 import { advanceCrank, setCrankAngle, sim } from '@/core/simulation/clock';
-import { useSimSnapshot } from './useSimSnapshot';
+import { useSimWriter } from './useSimSnapshot';
 
 const SPEEDS = [1, 0.5, 0.25, 0.1, 0.03];
 
+/** Lectura de régimen y estado: se escribe directamente en el DOM a 20 Hz. */
+function RpmReadout({ idle }: { idle: number }) {
+  const running = useApp((s) => s.running);
+  const num = useRef<HTMLSpanElement>(null);
+  const st = useRef<HTMLDivElement>(null);
+  const write = (s: { rpm: number }) => {
+    if (num.current) num.current.textContent = String(Math.round(s.rpm));
+    if (st.current) st.current.textContent = running ? (s.rpm < idle * 0.9 ? 'Arrancando' : 'En marcha') : s.rpm > 0 ? 'Deteniéndose' : 'Detenido';
+  };
+  useSimWriter(write, 20);
+  useEffect(() => write(sim));
+  return (
+    <div>
+      <div className="rpm-read">
+        <span ref={num}>0</span>
+        <small>rpm</small>
+      </div>
+      <div ref={st} className="ctrl-label" style={{ textAlign: 'right' }} />
+    </div>
+  );
+}
+
 export function BottomBar() {
-  const app = useApp();
+  const t = useT();
+  const app = useApp(
+    useShallow((s) => ({
+      engineId: s.engineId,
+      running: s.running,
+      paused: s.paused,
+      targetRpm: s.targetRpm,
+      load: s.load,
+      stepSize: s.stepSize,
+      timeScale: s.timeScale,
+      cut: s.cut,
+      cutOffset: s.cutOffset,
+      explode: s.explode,
+      transparency: s.transparency,
+      focusCylinder: s.focusCylinder,
+      set: s.set,
+    })),
+  );
   const def = getEngine(app.engineId);
-  const snap = useSimSnapshot(20);
   const fa = firingAngles(def.firingOrder);
 
   const step = (dir: 1 | -1) => {
@@ -31,25 +72,17 @@ export function BottomBar() {
           <button
             className={`btn-power btn ${app.running ? 'off' : ''}`}
             onClick={() => app.set({ running: !app.running, paused: false })}
-            title="Encender o apagar el motor"
+            title={`${app.running ? t('bottom.stop') : t('bottom.start')} (E)`}
           >
-            {app.running ? '■ APAGAR MOTOR' : '▶ ENCENDER MOTOR'}
+            <Icon name={app.running ? 'stop' : 'play'} size={15} /> {(app.running ? t('bottom.stop') : t('bottom.start')).toUpperCase()}
           </button>
-          <div>
-            <div className="rpm-read">
-              {Math.round(snap.rpm)}
-              <small>rpm</small>
-            </div>
-            <div className="ctrl-label" style={{ textAlign: 'right' }}>
-              {app.running ? (snap.rpm < def.rpm.idle * 0.9 ? 'Arrancando' : 'En marcha') : snap.rpm > 0 ? 'Deteniéndose' : 'Detenido'}
-            </div>
-          </div>
+          <RpmReadout idle={def.rpm.idle} />
         </div>
 
         <div className="ctrl-group" style={{ minWidth: 230 }}>
           <div className="grow">
             <div className="row">
-              <span className="ctrl-label">RPM objetivo</span>
+              <span className="ctrl-label">{t('bottom.target')}</span>
               <span className="spacer" />
               <span className="mono">{app.targetRpm}</span>
             </div>
@@ -65,7 +98,7 @@ export function BottomBar() {
           </div>
           <div style={{ width: 110 }}>
             <div className="row">
-              <span className="ctrl-label">Carga</span>
+              <span className="ctrl-label">{t('bottom.load')}</span>
               <span className="spacer" />
               <span className="mono">{Math.round(app.load * 100)}%</span>
             </div>
@@ -74,14 +107,14 @@ export function BottomBar() {
         </div>
 
         <div className="ctrl-group">
-          <button className="btn icon" title="Paso atrás" onClick={() => step(-1)}>
-            ⏮
+          <button className="btn icon" title="Paso atrás (←)" aria-label="Paso atrás" onClick={() => step(-1)}>
+            <Icon name="stepBack" />
           </button>
-          <button className={`btn ${app.paused ? 'on' : ''}`} onClick={() => app.set({ paused: !app.paused })} title="Pausa / reproducir">
-            {app.paused ? '▶ Reproducir' : '❚❚ Pausa'}
+          <button className={`btn ${app.paused ? 'on' : ''}`} onClick={() => app.set({ paused: !app.paused })} title={`${t('bottom.pause')} / ${t('bottom.resume')} (Espacio)`}>
+            <Icon name={app.paused ? 'play' : 'pause'} size={14} /> {app.paused ? t('bottom.resume') : t('bottom.pause')}
           </button>
-          <button className="btn icon" title="Avance paso a paso" onClick={() => step(1)}>
-            ⏭
+          <button className="btn icon" title="Avance paso a paso (→)" aria-label="Avance paso a paso" onClick={() => step(1)}>
+            <Icon name="stepFwd" />
           </button>
           <select value={String(app.stepSize)} onChange={(e) => app.set({ stepSize: (e.target.value === 'fase' ? 'fase' : Number(e.target.value)) as StepSize })} title="Tamaño del paso">
             <option value="1">1°</option>
@@ -92,19 +125,19 @@ export function BottomBar() {
         </div>
 
         <div className="ctrl-group">
-          <span className="ctrl-label">Velocidad</span>
+          <span className="ctrl-label">{t('bottom.speed')}</span>
           {SPEEDS.map((s) => (
             <button key={s} className={`btn sm ${app.timeScale === s ? 'on' : ''}`} onClick={() => app.set({ timeScale: s })}>
               {s === 1 ? 'Normal' : `${s}×`}
             </button>
           ))}
-          <button className={`btn sm amber ${app.timeScale < 1 ? 'on' : ''}`} onClick={() => app.set({ timeScale: app.timeScale < 1 ? 1 : 0.1 })} title="Cámara lenta">
-            Cámara lenta
+          <button className={`btn sm amber ${app.timeScale < 1 ? 'on' : ''}`} onClick={() => app.set({ timeScale: app.timeScale < 1 ? 1 : 0.1 })} title={t('bottom.slowmo')}>
+            <Icon name="slow" size={13} /> {t('bottom.slowmo')}
           </button>
         </div>
 
         <div className="ctrl-group">
-          <span className="ctrl-label">Corte</span>
+          <span className="ctrl-label">{t('bottom.cut')}</span>
           <select value={app.cut} onChange={(e) => app.set({ cut: e.target.value as CutMode })}>
             <option value="none">Sin corte</option>
             <option value="longitudinal">Longitudinal</option>
@@ -118,14 +151,14 @@ export function BottomBar() {
         </div>
 
         <div className="ctrl-group">
-          <span className="ctrl-label">Despiece</span>
+          <span className="ctrl-label">{t('bottom.explode')}</span>
           <input style={{ width: 90 }} type="range" min={0} max={1} step={0.01} value={app.explode} onChange={(e) => app.set({ explode: Number(e.target.value) })} aria-label="Despiece" />
-          <span className="ctrl-label">Transp.</span>
+          <span className="ctrl-label">{t('bottom.transp')}</span>
           <input style={{ width: 80 }} type="range" min={0} max={0.95} step={0.01} value={app.transparency} onChange={(e) => app.set({ transparency: Number(e.target.value) })} aria-label="Transparencia" />
         </div>
 
         <div className="ctrl-group">
-          <span className="ctrl-label">Cilindro</span>
+          <span className="ctrl-label">{t('bottom.cyl')}</span>
           {def.firingOrder
             .slice()
             .sort((a, b) => a - b)
@@ -136,7 +169,7 @@ export function BottomBar() {
             ))}
         </div>
       </div>
-      <CycleTimeline fireAngles={fa} angle={snap.angle} focus={app.focusCylinder} />
+      <CycleTimeline fireAngles={fa} focus={app.focusCylinder} />
     </div>
   );
 }
@@ -158,19 +191,32 @@ function bands(fireAngle: number): { phase: StrokePhase; from: number; to: numbe
 }
 
 /** Línea de tiempo del ciclo de 720°: fases de cada cilindro y cursor arrastrable (rotación manual). */
-function CycleTimeline({ fireAngles, angle, focus }: { fireAngles: number[]; angle: number; focus: number }) {
+function CycleTimeline({ fireAngles, focus }: { fireAngles: number[]; focus: number }) {
+  const t = useT();
   const wrap = useRef<HTMLDivElement>(null);
+  const cursor = useRef<HTMLDivElement>(null);
+  const info = useRef<HTMLSpanElement>(null);
+  const write = (s: { angle: number }) => {
+    if (cursor.current) cursor.current.style.left = `${(s.angle / 720) * 100}%`;
+    const phi = localCycleAngle(s.angle, fireAngles[focus - 1]);
+    const ph = phaseOf(phi);
+    if (info.current) {
+      info.current.textContent = `Cil. ${focus}: ${PHASE_LABEL[ph]} · φ ${phi.toFixed(0)}°`;
+      info.current.style.color = PHASE_COLOR[ph];
+    }
+  };
+  useSimWriter(write, 30);
+  useEffect(() => write(sim));
   const drag = (clientX: number) => {
     const r = wrap.current!.getBoundingClientRect();
     const t = Math.max(0, Math.min(0.9999, (clientX - r.left) / r.width));
     setCrankAngle(t * 720);
     useApp.getState().set({ paused: true });
   };
-  const phi = localCycleAngle(angle, fireAngles[focus - 1]);
   return (
     <div>
       <div className="row" style={{ marginBottom: 4 }}>
-        <span className="ctrl-label">Línea de tiempo del ciclo (720°) · arrastre para girar el cigüeñal manualmente</span>
+        <span className="ctrl-label">{t('bottom.timeline')}</span>
         <span className="spacer" />
         {(Object.keys(PHASE_LABEL) as StrokePhase[]).map((p) => (
           <span key={p} className="row" style={{ gap: 4, fontSize: 10, color: 'var(--muted)' }}>
@@ -178,9 +224,7 @@ function CycleTimeline({ fireAngles, angle, focus }: { fireAngles: number[]; ang
             {PHASE_LABEL[p]}
           </span>
         ))}
-        <span className="mono" style={{ fontSize: 11, color: PHASE_COLOR[phaseOf(phi)] }}>
-          Cil. {focus}: {PHASE_LABEL[phaseOf(phi)]} · φ {phi.toFixed(0)}°
-        </span>
+        <span ref={info} className="mono" style={{ fontSize: 11 }} />
       </div>
       <div
         className="tl-wrap"
@@ -199,7 +243,7 @@ function CycleTimeline({ fireAngles, angle, focus }: { fireAngles: number[]; ang
             ))}
           </div>
         ))}
-        <div className="tl-cursor" style={{ left: `${(angle / 720) * 100}%` }} />
+        <div ref={cursor} className="tl-cursor" />
       </div>
       <div className="tl-ticks">
         {[0, 90, 180, 270, 360, 450, 540, 630, 720].map((t) => (

@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { useApp, type ViewMode } from '@/state/store';
+import { useT } from '@/i18n';
+import { ErrorOverlay, LoadingOverlay, PerfHud, SceneBoundary } from './StatusOverlays';
 import { getEngine } from '@/engines/catalog';
 import { Scene } from '@/render/Scene';
 import { cameraApi, VIEW_LABEL, type ViewPreset } from '@/camera/CameraRig';
@@ -16,23 +19,33 @@ export const MODES: { id: ViewMode; label: string }[] = [
   { id: 'aire', label: 'Admisión y escape' },
   { id: 'despiece', label: 'Despiece' },
   { id: 'rayosx', label: 'Rayos X' },
-  { id: 'termica', label: 'Vista térmica' },
   { id: 'tecnico', label: 'Técnico' },
+  { id: 'termica', label: 'Vista térmica' },
 ];
+
+/** Tecla de acceso de cada modo (1…9, 0 y T), la misma que muestra el botón. */
+export const modeKey = (i: number, id: ViewMode) => (id === 'termica' ? 'T' : i === 9 ? '0' : String(i + 1));
 
 export function Viewport() {
   const mode = useApp((s) => s.mode);
   const setMode = useApp((s) => s.setMode);
   const caption = useApp((s) => s.caption);
   const def = getEngine(useApp((s) => s.engineId));
+  const t = useT();
+  const [error, setError] = useState<string | null>(null);
   return (
     <main className="viewport">
-      <Scene />
+      <SceneBoundary>
+        <Scene onError={setError} />
+      </SceneBoundary>
+      <LoadingOverlay />
+      {error && <ErrorOverlay message={error} />}
+      <PerfHud />
       <div className="overlay modes" role="tablist" aria-label="Modos de visualización">
         {MODES.map((m, i) => (
-          <button key={m.id} className={`mode-btn ${mode === m.id ? 'on' : ''}`} onClick={() => setMode(m.id)} title={m.label}>
-            <span className="num">{String(i + 1).padStart(2, '0')}</span>
-            <span className="txt">{m.label.toUpperCase()}</span>
+          <button key={m.id} role="tab" aria-selected={mode === m.id} className={`mode-btn ${mode === m.id ? 'on' : ''}`} onClick={() => setMode(m.id)} title={`${t(`mode.${m.id}`)} (${modeKey(i, m.id)})`}>
+            <span className="num">{modeKey(i, m.id)}</span>
+            <span className="txt">{t(`mode.${m.id}`).toUpperCase()}</span>
           </button>
         ))}
       </div>

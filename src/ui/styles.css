@@ -350,3 +350,20 @@ kbd { font-family: var(--mono); font-size: 11px; padding: 1px 6px; border-radius
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001s !important; transition-duration: .001s !important; }
 }
+.topbar { gap: 12px; }
+.top-tools { min-width: 0; flex-shrink: 1; }
+.top-tools select { min-width: 0; }
+.sel-tour { width: 150px; }
+.sel-light { width: 160px; }
+.sel-ui { width: 118px; }
+@media (max-width: 1480px) {
+  .top-tools .btn .lbl { display: none; }
+  .top-tools .btn:has(.lbl) { width: 30px; padding: 0; justify-content: center; }
+  .sel-tour { width: 120px; }
+  .sel-light { width: 128px; }
+  .sel-ui { width: 100px; }
+}
+@media (max-width: 1320px) {
+  .logo-text small { display: none; }
+  .status-pill { display: none; }
+}
