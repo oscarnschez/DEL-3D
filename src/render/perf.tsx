@@ -1,3 +1,4 @@
+import type * as THREE from 'three';
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { create } from 'zustand';
@@ -53,6 +54,7 @@ export function deviceCaps(gl: WebGLRenderingContext | WebGL2RenderingContext): 
 
 export function PerfProbe() {
   const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
   const frames = useRef<number[]>([]);
   const last = useRef(performance.now());
   const lastPub = useRef(0);
@@ -60,10 +62,12 @@ export function PerfProbe() {
   useEffect(() => {
     gl.info.autoReset = false;
     perf.renderer = deviceCaps(gl.getContext()).renderer ?? 'desconocido';
+    // sólo en desarrollo: los scripts de medición recorren la escena
+    if (import.meta.env.DEV) (window as unknown as { __delScene: THREE.Scene }).__delScene = scene;
     return () => {
       gl.info.autoReset = true;
     };
-  }, [gl]);
+  }, [gl, scene]);
 
   // Prioridad −3: se ejecuta al inicio del frame, cuando `info` contiene el frame anterior completo
   // (con postprocesado hay varios render por frame; por eso el reinicio es manual).

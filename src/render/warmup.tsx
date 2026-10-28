@@ -73,7 +73,7 @@ export function warmupShaders(gl: THREE.WebGLRenderer, scene: THREE.Scene, camer
   const prevTarget = gl.getRenderTarget();
   const rt = postFx ? new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType }) : null;
   if (rt) gl.setRenderTarget(rt);
-  const done = gl.compileAsync(scene, camera);
+  const done = compileAsyncSafe(gl, scene, camera);
   if (rt) gl.setRenderTarget(prevTarget);
   for (const o of hidden) o.visible = false;
 
@@ -88,6 +88,30 @@ export function warmupShaders(gl: THREE.WebGLRenderer, scene: THREE.Scene, camer
     geo.dispose();
     extra.forEach((g) => g.dispose());
     rt?.dispose();
+  });
+}
+
+type ProgramProps = { currentProgram?: { isReady(): boolean } };
+
+/**
+ * Como `WebGLRenderer.compileAsync`, pero tolera materiales liberados mientras se espera (al
+ * cambiar de motor varias veces seguidas): three lanzaba una excepción y la promesa no terminaba.
+ */
+function compileAsyncSafe(gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera): Promise<void> {
+  const materials = gl.compile(scene, camera);
+  const props = (gl as unknown as { properties: { get(m: THREE.Material): ProgramProps } }).properties;
+  const parallel = gl.extensions.get('KHR_parallel_shader_compile') !== null;
+  return new Promise((resolve) => {
+    const check = () => {
+      for (const m of materials) {
+        const program = props.get(m).currentProgram;
+        if (!program || program.isReady()) materials.delete(m);
+      }
+      if (materials.size === 0) resolve();
+      else setTimeout(check, 10);
+    };
+    if (parallel) check();
+    else setTimeout(check, 10);
   });
 }
 

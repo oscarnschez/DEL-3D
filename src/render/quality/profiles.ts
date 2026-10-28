@@ -30,8 +30,6 @@ export interface ProfileConfig {
   bloom: boolean;
   /** Muestras del raymarching de la llama. */
   flameSteps: number;
-  /** Factor de teselado de las piezas procedurales (1 = completo). */
-  detail: number;
   /** Resolución de dibujo dinámica según rendimiento medido. */
   dynamicResolution: boolean;
 }
@@ -49,7 +47,6 @@ export const PROFILES: Record<GraphicsProfile, ProfileConfig> = {
     smaa: true,
     bloom: true,
     flameSteps: 48,
-    detail: 1,
     dynamicResolution: false,
   },
   alto: {
@@ -64,7 +61,6 @@ export const PROFILES: Record<GraphicsProfile, ProfileConfig> = {
     smaa: true,
     bloom: false,
     flameSteps: 32,
-    detail: 1,
     dynamicResolution: false,
   },
   equilibrado: {
@@ -79,7 +75,6 @@ export const PROFILES: Record<GraphicsProfile, ProfileConfig> = {
     smaa: false,
     bloom: false,
     flameSteps: 20,
-    detail: 0.75,
     dynamicResolution: true,
   },
   rendimiento: {
@@ -94,7 +89,6 @@ export const PROFILES: Record<GraphicsProfile, ProfileConfig> = {
     smaa: false,
     bloom: false,
     flameSteps: 12,
-    detail: 0.5,
     dynamicResolution: true,
   },
 };

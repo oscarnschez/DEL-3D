@@ -93,7 +93,7 @@ const read = () =>
       jsHeapMB: mem,
     };
   });
-const click = (text) => page.getByRole('button', { name: text, exact: false }).first().evaluate((b) => b.click());
+const click = (text) => page.locator('button', { hasText: text }).first().evaluate((b) => b.click());
 
 const results = { url, secondsPerScenario: secs, viewport: page.viewportSize(), loadMs, renderer: 'SwiftShader (software)', scenarios: {} };
 const measure = async (name, fn) => {

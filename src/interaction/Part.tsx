@@ -128,6 +128,8 @@ export function Part({ id, index, shell, children, position }: PartProps) {
             mm = m.clone();
             cloneOf.current.set(m, mm);
             patchSection(mm, m, HOLLOW.has(id));
+            // transparente y de doble cara: un solo pase (three dibujaría la malla dos veces, cara trasera y delantera)
+            mm.forceSinglePass = true;
             const std = mm as THREE.MeshStandardMaterial;
             d = {
               color0: std.color ? std.color.clone() : null,
@@ -172,7 +174,7 @@ export function Part({ id, index, shell, children, position }: PartProps) {
           return mm;
         });
         mesh.material = Array.isArray(mesh.material) ? next : next[0];
-        mesh.castShadow = cast && opacity > 0.6;
+        mesh.castShadow = cast && opacity >= 0.999; // las piezas translúcidas (rayos X, transparencia) no proyectan sombra
         mesh.receiveShadow = true;
       });
     };
