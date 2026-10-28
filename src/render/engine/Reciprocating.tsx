@@ -1,9 +1,10 @@
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Part } from '@/interaction/Part';
 import { DEG } from '@/core/kinematics/crank';
 import { getMaterials } from '../materials';
+import { useDisposable } from '../resources';
 import {
   crankWebShape,
   extrudeX,
@@ -22,7 +23,7 @@ export function Crankshaft() {
   const { L, angle } = useEngine();
   const M = getMaterials();
   const ref = useRef<THREE.Group>(null);
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const mainLen = L.bore * 0.3;
     const pinLen = L.bore * 0.42;
     const webT = (L.pitch - mainLen - pinLen) / 2 - 0.001;
@@ -48,7 +49,7 @@ export function Crankshaft() {
   });
 
   return (
-    <Part id="crankshaft" explodeScale={0.25}>
+    <Part id="crankshaft">
       <group ref={ref}>
         {/* muñones de bancada: uno entre cada par de cilindros y en los extremos (n + 1) */}
         {Array.from({ length: L.n + 1 }, (_, k) => (
@@ -79,7 +80,7 @@ export function PistonsAndRods() {
   const { L, states } = useEngine();
   const M = getMaterials();
   const g = L.def.geometry;
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const wristR = L.bore * 0.19;
     return {
       piston: pistonGeometry(L.bore, g.compressionHeight),
@@ -113,16 +114,16 @@ export function PistonsAndRods() {
     <>
       {L.cylX.map((x, i) => (
         <group key={i} position={[x, 0, 0]}>
-          <Part id="piston" index={i + 1} explodeScale={0.35}>
+          <Part id="piston" index={i + 1}>
             <group ref={(el) => (pistons.current[i] = el)}>
               <mesh geometry={geo.piston} material={M.pistonAlloy} />
               <mesh geometry={geo.pin} material={M.machinedSteel} />
             </group>
           </Part>
-          <Part id="rings" index={i + 1} explodeScale={0.35}>
+          <Part id="rings" index={i + 1}>
             <RingFollower index={i} geometry={geo.rings} />
           </Part>
-          <Part id="rod" index={i + 1} explodeScale={0.3}>
+          <Part id="rod" index={i + 1}>
             <group ref={(el) => (rods.current[i] = el)}>
               <mesh geometry={geo.rod} material={M.forgedSteel} />
               {[-1, 1].map((sgn) => (
@@ -151,7 +152,7 @@ export function Flywheel() {
   const { L, angle } = useEngine();
   const M = getMaterials();
   const ref = useRef<THREE.Group>(null);
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const R = L.bore * 1.95;
     const disc = lathe(
       [
@@ -177,7 +178,7 @@ export function Flywheel() {
   });
   const x = L.rear + (L.def.valvetrain.gearTrain === 'rear' ? 0.075 : 0.035);
   return (
-    <Part id="flywheel" explodeScale={0.3}>
+    <Part id="flywheel">
       <group ref={ref} position={[x, 0, 0]}>
         <mesh geometry={geo.disc} material={M.machinedSteel} />
         <mesh geometry={geo.ring} material={M.darkSteel} position={[0.012, 0, 0]} />
@@ -199,7 +200,7 @@ export function Damper() {
   const { L, angle } = useEngine();
   const M = getMaterials();
   const ref = useRef<THREE.Group>(null);
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const R = L.bore * 1.25;
     const body = lathe(
       [
@@ -229,7 +230,7 @@ export function Damper() {
     if (ref.current) ref.current.rotation.x = angle.value * DEG;
   });
   return (
-    <Part id="damper" explodeScale={0.25}>
+    <Part id="damper">
       <group ref={ref} position={[L.front - L.bore * 0.9, 0, 0]}>
         <mesh geometry={geo.body} material={M.blackPaint} />
         <mesh geometry={geo.pulley} material={M.zinc} position={[0.075, 0, 0]} />

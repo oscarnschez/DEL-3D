@@ -1,7 +1,7 @@
-import { create } from 'zustand';
+import { create, type StoreApi, type UseBoundStore } from 'zustand';
 import { PARTS, parsePartKey, type PartId, type PartKey, type SystemId } from '@/engines/parts';
 
-interface SelectionState {
+export interface SelectionState {
   selected: PartKey | null;
   hovered: PartKey | null;
   hidden: Set<PartId>;
@@ -19,7 +19,10 @@ interface SelectionState {
   restore: () => void;
 }
 
-export const useSelection = create<SelectionState>((set) => ({
+export type SelectionStore = UseBoundStore<StoreApi<SelectionState>>;
+
+/** Crea un store de selección (el principal y uno por motor en el comparador). */
+export const createSelectionStore = (): SelectionStore => create<SelectionState>((set) => ({
   selected: null,
   hovered: null,
   hidden: new Set(),
@@ -47,6 +50,8 @@ export const useSelection = create<SelectionState>((set) => ({
   restore: () =>
     set({ selected: null, hovered: null, hidden: new Set(), ghosted: new Set(), isolate: false, showRelated: false, systemSel: null }),
 }));
+
+export const useSelection = createSelectionStore();
 
 export type PartVisualState = 'normal' | 'selected' | 'related' | 'dimmed' | 'isolatedOut' | 'hidden' | 'ghost';
 

@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
 import * as THREE from 'three';
 import { Part } from '@/interaction/Part';
-import { getMaterials } from '../materials';
+import { cloneMaterial, getMaterials } from '../materials';
+import { useDisposable } from '../resources';
 import { extrudeX, lathe, polyShape, roundedRectShape } from '../geometry/builders';
 import { useEngine } from './useEngine';
 import { Bolts } from './Bolts';
@@ -18,8 +18,8 @@ export function shellDims(L: EngineLayout) {
 }
 
 function useTinted(base: THREE.MeshStandardMaterial, color: string) {
-  return useMemo(() => {
-    const m = base.clone();
+  return useDisposable(() => {
+    const m = cloneMaterial(base);
     m.color.set(color);
     return m;
   }, [base, color]);
@@ -30,7 +30,7 @@ export function Block() {
   const M = getMaterials();
   const paint = useTinted(M.paintedIron, L.def.style.block);
   const d = shellDims(L);
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const top = L.deckY;
     const bot = L.crankcaseBottomY;
     const flare = d.linerBottom - 0.03;
@@ -59,7 +59,7 @@ export function Block() {
     return { body, boss, rib, plug, flare, bossY: (top - 0.05 + flare + 0.07) / 2 };
   }, [L, d.deckHalf, d.crankHalf, d.linerBottom]);
 
-  const bolts = useMemo(() => {
+  const bolts = useDisposable(() => {
     const items: { p: [number, number, number]; dir?: [number, number, number] }[] = [];
     for (let k = 0; k <= L.n; k++) {
       const x = L.cylX[0] - L.pitch / 2 + k * L.pitch;
@@ -97,7 +97,7 @@ export function Liners() {
   const { L } = useEngine();
   const M = getMaterials();
   const d = shellDims(L);
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const ri = L.bore / 2 + 0.0002;
     const ro = ri + 0.0075;
     const top = L.deckY - 0.0005;
@@ -129,7 +129,7 @@ export function Liners() {
 export function MainBearingCaps() {
   const { L } = useEngine();
   const M = getMaterials();
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const R = L.mainJournalRadius;
     const w = R * 2.6;
     const h = R * 1.6;
@@ -144,7 +144,7 @@ export function MainBearingCaps() {
     s.lineTo(-w / 2, 0);
     return extrudeX(s, L.bore * 0.28, 0.002, 24);
   }, [L]);
-  const bolts = useMemo(
+  const bolts = useDisposable(
     () =>
       Array.from({ length: L.n + 1 }, (_, k) => {
         const x = L.cylX[0] - L.pitch / 2 + k * L.pitch;
@@ -167,7 +167,7 @@ export function CylinderHead() {
   const M = getMaterials();
   const paint = useTinted(M.paintedIron, L.def.style.head);
   const d = shellDims(L);
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const y0 = L.deckY + 0.0015;
     const y1 = L.headTopY;
     const w = d.headHalf;
@@ -198,7 +198,7 @@ export function CylinderHead() {
     const tower = extrudeX(roundedRectShape((cr + 0.012) * 2, towerH, 0.004, 0, towerH / 2), 0.022, 0.0015, 4);
     return { body, gasket, port, cap, tower, portY: y0 + (L.headTopY - y0) * 0.45 };
   }, [L, d.headHalf, d.deckHalf]);
-  const bolts = useMemo(() => {
+  const bolts = useDisposable(() => {
     const items: { p: [number, number, number] }[] = [];
     for (let k = 0; k <= L.n; k++) {
       const x = L.cylX[0] - L.pitch / 2 + k * L.pitch;
@@ -211,7 +211,7 @@ export function CylinderHead() {
     return items;
   }, [L]);
   return (
-    <Part id="head" shell explodeScale={0.25}>
+    <Part id="head" shell>
       <mesh geometry={geo.gasket} material={M.gasket} position={[0, L.deckY + 0.00075, 0]} />
       <mesh geometry={geo.body} material={paint} />
       {L.cylX.map((x, i) => (
@@ -238,14 +238,14 @@ export function CylinderHead() {
 export function ValveCover() {
   const { L } = useEngine();
   const M = getMaterials();
-  const mat = useMemo(() => {
-    const m = M.coverPaint.clone();
+  const mat = useDisposable(() => {
+    const m = cloneMaterial(M.coverPaint);
     m.color.set(L.def.style.cover);
     return m;
   }, [M.coverPaint, L.def.style.cover]);
   const d = shellDims(L);
   const style = L.def.style.coverStyle;
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const y0 = L.headTopY;
     const y1 = d.coverTop;
     const w = d.headHalf - 0.004;
@@ -265,7 +265,7 @@ export function ValveCover() {
     const lip = extrudeX(roundedRectShape(w * 0.9, 0.012, 0.005), len * 0.8, 0.003, 6);
     return { body, rib, flange, lip, len, segs, y1 };
   }, [L, d.headHalf, d.coverTop, style]);
-  const bolts = useMemo(() => {
+  const bolts = useDisposable(() => {
     const items: { p: [number, number, number] }[] = [];
     const w = d.headHalf + 0.0;
     for (let k = 0; k < 10; k++) {
@@ -275,7 +275,7 @@ export function ValveCover() {
     return items;
   }, [L, geo.len, d.headHalf]);
   return (
-    <Part id="valveCover" shell explodeScale={0.3}>
+    <Part id="valveCover" shell>
       <mesh geometry={geo.flange} material={mat} position={[0, L.headTopY + 0.005, 0]} />
       {Array.from({ length: geo.segs }, (_, k) => (
         <mesh key={k} geometry={geo.body} material={mat} position={[geo.segs > 1 ? (k - 0.5) * (geo.len / 2) : 0, 0, 0]} />
@@ -292,7 +292,7 @@ export function OilPan() {
   const { L } = useEngine();
   const M = getMaterials();
   const d = shellDims(L);
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const y0 = L.crankcaseBottomY;
     const y1 = L.sumpBottomY;
     const w = d.crankHalf + 0.014;
@@ -319,7 +319,7 @@ export function OilPan() {
     const plug = new THREE.CylinderGeometry(0.012, 0.012, 0.012, 6);
     return { pan, sump, plug, w };
   }, [L, d.crankHalf]);
-  const bolts = useMemo(() => {
+  const bolts = useDisposable(() => {
     const items: { p: [number, number, number]; dir?: [number, number, number] }[] = [];
     for (let k = 0; k < 12; k++) {
       const x = -L.blockLength / 2 + 0.03 + (k * (L.blockLength - 0.06)) / 11;
@@ -328,7 +328,7 @@ export function OilPan() {
     return items;
   }, [L, geo.w]);
   return (
-    <Part id="oilPan" shell explodeScale={0.25}>
+    <Part id="oilPan" shell>
       <mesh geometry={geo.pan} material={M.blackPaint} />
       <mesh geometry={geo.sump} material={M.blackPaint} position={[L.blockLength * 0.25, 0, 0]} />
       <mesh geometry={geo.plug} material={M.bolt} position={[L.blockLength * 0.3, L.sumpBottomY - 0.006, 0]} />

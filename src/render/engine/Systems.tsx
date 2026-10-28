@@ -1,11 +1,12 @@
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Part } from '@/interaction/Part';
 import { sim } from '@/core/simulation/clock';
 import { DEG } from '@/core/kinematics/crank';
 import type { EngineLayout } from '@/engines/derive';
-import { getMaterials } from '../materials';
+import { cloneMaterial, getMaterials } from '../materials';
+import { useDisposable } from '../resources';
 import { extrudeX, gearGeometry, journalGeometry, lathe, pipeGeometry, polyShape, roundedRectShape } from '../geometry/builders';
 import { useEngine } from './useEngine';
 import { shellDims } from './Structure';
@@ -43,8 +44,8 @@ export function auxLayout(L: EngineLayout) {
 export function FuelSystem() {
   const { L, states } = useEngine();
   const M = getMaterials();
-  const A = useMemo(() => auxLayout(L), [L]);
-  const geo = useMemo(() => {
+  const A = useDisposable(() => auxLayout(L), [L]);
+  const geo = useDisposable(() => {
     const tipY = L.deckY - 0.003;
     const topY = L.deckY + L.headHeight * 0.95;
     const h = topY - tipY;
@@ -110,11 +111,11 @@ export function FuelSystem() {
       mat.emissiveIntensity = states[i].injection * 2.5;
     });
   });
-  const injGlow = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2b2f33', emissive: '#ffd23f', emissiveIntensity: 0, metalness: 0.6, roughness: 0.4 }), []);
+  const injGlow = useDisposable(() => new THREE.MeshStandardMaterial({ color: '#2b2f33', emissive: '#ffd23f', emissiveIntensity: 0, metalness: 0.6, roughness: 0.4 }), []);
   return (
     <>
       {L.cylX.map((x, i) => (
-        <Part key={i} id="injector" index={i + 1} explodeScale={0.25}>
+        <Part key={i} id="injector" index={i + 1}>
           <group position={[x, geo.tipY, 0]}>
             <mesh geometry={geo.injector} material={M.zinc} />
             <mesh ref={(m) => (needles.current[i] = m)} material={injGlow} position={[0, (L.headHeight * 0.95 + 0.003) * 0.6, 0]} userData={{ noPart: true }}>
@@ -147,8 +148,8 @@ export function FuelSystem() {
 export function AirSystem() {
   const { L } = useEngine();
   const M = getMaterials();
-  const A = useMemo(() => auxLayout(L), [L]);
-  const geo = useMemo(() => {
+  const A = useDisposable(() => auxLayout(L), [L]);
+  const geo = useDisposable(() => {
     const d = A.d;
     // múltiple de admisión: plenum + runners
     const plenum = extrudeX(roundedRectShape(0.07, 0.085, 0.03), L.blockLength * 0.95, 0.005, 10);
@@ -232,7 +233,7 @@ export function AirSystem() {
           <mesh geometry={geo.egrOut} material={M.heatShield} />
         </Part>
       )}
-      <Part id="aftertreatment" explodeScale={0.3}>
+      <Part id="aftertreatment">
         <mesh geometry={geo.down} material={M.heatShield} />
         <Aftertreatment />
       </Part>
@@ -247,8 +248,8 @@ export function AirSystem() {
 function Turbo() {
   const { L } = useEngine();
   const M = getMaterials();
-  const A = useMemo(() => auxLayout(L), [L]);
-  const geo = useMemo(() => {
+  const A = useDisposable(() => auxLayout(L), [L]);
+  const geo = useDisposable(() => {
     const volute = (R: number, r: number) => {
       // voluta de sección creciente alrededor del eje X
       const pts: THREE.Vector3[] = [];
@@ -330,8 +331,8 @@ function Turbo() {
 function Aftertreatment() {
   const { L } = useEngine();
   const M = getMaterials();
-  const A = useMemo(() => auxLayout(L), [L]);
-  const geo = useMemo(() => {
+  const A = useDisposable(() => auxLayout(L), [L]);
+  const geo = useDisposable(() => {
     const can = lathe(
       [
         [0, -0.48],
@@ -370,9 +371,9 @@ function Aftertreatment() {
 export function LubeSystem() {
   const { L, angle } = useEngine();
   const M = getMaterials();
-  const A = useMemo(() => auxLayout(L), [L]);
+  const A = useDisposable(() => auxLayout(L), [L]);
   const gear = useRef<THREE.Mesh>(null);
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const pump = extrudeX(roundedRectShape(0.09, 0.07, 0.02), 0.07, 0.004, 6);
     const pg = gearGeometry(0.03, 20, 0.02);
     const pickup = pipeGeometry([V(A.oilPump.x, A.oilPump.y - 0.03, 0), V(A.oilPump.x + 0.05, L.sumpBottomY + 0.06, 0), V(L.blockLength * 0.22, L.sumpBottomY + 0.035, 0)], 0.014, 32, 10);
@@ -406,9 +407,9 @@ export function LubeSystem() {
 export function CoolingSystem() {
   const { L, angle } = useEngine();
   const M = getMaterials();
-  const A = useMemo(() => auxLayout(L), [L]);
+  const A = useDisposable(() => auxLayout(L), [L]);
   const pulley = useRef<THREE.Group>(null);
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const vol = lathe([[0, -0.04], [0.07, -0.04], [0.085, -0.02], [0.085, 0.03], [0.06, 0.045], [0, 0.045]], 40);
     vol.rotateZ(-Math.PI / 2);
     const p = lathe([[0, -0.015], [0.065, -0.015], [0.065, 0.015], [0, 0.015]], 40);
@@ -447,7 +448,7 @@ export function CoolingSystem() {
 export function Housings() {
   const { L } = useEngine();
   const M = getMaterials();
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const d = shellDims(L);
     const topY = L.kind === 'ohv' ? L.camY : L.camY;
     const zR = L.kind === 'ohv' ? 0.06 : L.camZ + 0.11;
@@ -488,8 +489,8 @@ export function Housings() {
     bell.rotateZ(-Math.PI / 2);
     return { cover, bell, d };
   }, [L]);
-  const paint = useMemo(() => {
-    const m = getMaterials().paintedIron.clone();
+  const paint = useDisposable(() => {
+    const m = cloneMaterial(getMaterials().paintedIron);
     m.color.set(L.def.style.block);
     return m;
   }, [L.def.style.block]);

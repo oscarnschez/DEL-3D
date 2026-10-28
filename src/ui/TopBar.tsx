@@ -1,4 +1,6 @@
-import { useApp, type Quality } from '@/state/store';
+import { useApp } from '@/state/store';
+import { useSettings } from '@/state/settings';
+import type { ProfileChoice } from '@/render/quality/profiles';
 import { getEngine } from '@/engines/catalog';
 import { useSelection } from '@/interaction/selection';
 import { cameraApi } from '@/camera/CameraRig';
@@ -51,10 +53,17 @@ export function TopBar({ onToggleLeft, onToggleRight }: { onToggleLeft: () => vo
         <button className={`btn ${app.labels ? 'on' : ''}`} onClick={() => app.set({ labels: !app.labels })}>
           Etiquetas
         </button>
-        <select value={app.quality} onChange={(e) => app.set({ quality: e.target.value as Quality })} title="Calidad gráfica">
-          <option value="alta">Calidad alta</option>
-          <option value="media">Calidad media</option>
-          <option value="baja">Calidad baja</option>
+        <select value={useSettings.getState().profileChoice} onChange={(e) => useSettings.getState().set({ profileChoice: e.target.value as ProfileChoice })} title="Calidad gráfica">
+          <option value="auto">Automático</option>
+          <option value="ultra">Ultra</option>
+          <option value="alto">Alto</option>
+          <option value="equilibrado">Equilibrado</option>
+          <option value="rendimiento">Rendimiento</option>
+        </select>
+        <select value={useSettings.getState().lighting} onChange={(e) => useSettings.getState().set({ lighting: e.target.value as 'estudio' })} title="Iluminación">
+          <option value="estudio">Estudio</option>
+          <option value="laboratorio">Laboratorio</option>
+          <option value="cine">Cine</option>
         </select>
         <button
           className="btn"

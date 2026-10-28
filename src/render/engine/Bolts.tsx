@@ -1,7 +1,8 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { boltGeometry } from '../geometry/builders';
 import { getMaterials } from '../materials';
+import { useDisposable } from '../resources';
 
 interface BoltsProps {
   /** Posición y dirección (eje del tornillo) de cada instancia. */
@@ -14,7 +15,7 @@ const UP = new THREE.Vector3(0, 1, 0);
 /** Tornillería instanciada (un draw call por grupo). */
 export function Bolts({ items, d = 0.008 }: BoltsProps) {
   const ref = useRef<THREE.InstancedMesh>(null);
-  const geo = useMemo(() => boltGeometry(d), [d]);
+  const geo = useDisposable(() => boltGeometry(d), [d]);
   useLayoutEffect(() => {
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
