@@ -169,6 +169,18 @@ function ChamberDetail({ cyl }: { cyl: number }) {
     [],
   );
 
+  // al salir del modo se vuelve al encuadre previo (salvo que un recorrido controle la cámara)
+  useEffect(() => {
+    const c = cameraApi.controls;
+    if (!c) return;
+    const pos = c.getPosition(new THREE.Vector3());
+    const target = c.getTarget(new THREE.Vector3());
+    return () => {
+      if (useApp.getState().tour || cameraApi.controls !== c) return;
+      void c.setLookAt(pos.x, pos.y, pos.z, target.x, target.y, target.z, true);
+    };
+  }, []);
+
   // acercamiento cinematográfico al cilindro observado
   useEffect(() => {
     const x = L.cylX[i];
