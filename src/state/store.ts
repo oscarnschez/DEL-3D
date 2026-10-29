@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { ExplodeGroup } from '@/interaction/explode';
 
 export type ViewMode =
   | 'exterior'
@@ -10,13 +11,12 @@ export type ViewMode =
   | 'aire'
   | 'despiece'
   | 'rayosx'
+  | 'termica'
   | 'tecnico';
 
 export type FlowSystem = 'lubricacion' | 'combustible' | 'refrigeracion' | 'aire';
 
 export type CutMode = 'none' | 'longitudinal' | 'transversal' | 'cilindro' | 'libre';
-
-export type Quality = 'alta' | 'media' | 'baja';
 
 export type Covers = { valveCover: boolean; head: boolean; oilPan: boolean; block: boolean; manifolds: boolean };
 
@@ -37,15 +37,19 @@ interface AppState {
   flows: Record<FlowSystem, boolean>;
   cut: CutMode;
   cutOffset: number;
+  /** Grado de despiece objetivo (0–1); las piezas se animan hacia él. */
   explode: number;
-  explodeGroup: 'todo' | string;
+  explodeGroup: ExplodeGroup;
+  /** Orientación del plano de corte dinámico (grados): giro alrededor de Y y de Z. */
+  cutYaw: number;
+  cutPitch: number;
   transparency: number;
   removed: Covers;
   labels: boolean;
-  quality: Quality;
   showComparator: boolean;
   compareIds: [string, string];
   tour: string | null;
+  tourPaused: boolean;
   caption: string | null;
   set: (p: Partial<AppState>) => void;
   setMode: (m: ViewMode) => void;
@@ -70,13 +74,15 @@ export const useApp = create<AppState>((set) => ({
   cutOffset: 0,
   explode: 0,
   explodeGroup: 'todo',
+  cutYaw: 45,
+  cutPitch: 0,
   transparency: 0,
   removed: { valveCover: false, head: false, oilPan: false, block: false, manifolds: false },
   labels: false,
-  quality: (new URLSearchParams(typeof location !== 'undefined' ? location.search : '').get('calidad') as Quality | null) ?? 'alta',
   showComparator: false,
   compareIds: ['cummins-x15', 'detroit-dd15'],
   tour: null,
+  tourPaused: false,
   caption: null,
   set: (p) => set(p),
   setMode: (mode) => {
@@ -87,6 +93,7 @@ export const useApp = create<AppState>((set) => ({
       flows,
       cut: 'none' as CutMode,
       explode: 0,
+      explodeGroup: 'todo' as ExplodeGroup,
       transparency: 0,
       labels: false,
       removed: { valveCover: false, head: false, oilPan: false, block: false, manifolds: false },
@@ -106,10 +113,13 @@ export const useApp = create<AppState>((set) => ({
         set({ ...base, flows, transparency: 0.7 });
         break;
       case 'despiece':
-        set({ ...base, explode: 0.6 });
+        set({ ...base, explode: 1 });
         break;
       case 'rayosx':
         set({ ...base, transparency: 0.9 });
+        break;
+      case 'termica':
+        set(base);
         break;
       case 'tecnico':
         set({ ...base, labels: true, cut: 'transversal' });

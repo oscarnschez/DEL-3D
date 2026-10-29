@@ -1,8 +1,15 @@
+import { useState } from 'react';
 import { useApp, type ViewMode } from '@/state/store';
+import { useT } from '@/i18n';
+import { ErrorOverlay, LoadingOverlay, PerfHud, SceneBoundary } from './StatusOverlays';
 import { getEngine } from '@/engines/catalog';
 import { Scene } from '@/render/Scene';
+import { LabelLayer } from '@/render/Labels';
 import { cameraApi, VIEW_LABEL, type ViewPreset } from '@/camera/CameraRig';
 import { CycleDial } from './CycleDial';
+import { ThermalLegend } from './ThermalLegend';
+import { SelectionCard } from './SelectionCard';
+import { TourBar } from './TourBar';
 import { PHASE_COLOR, PHASE_LABEL } from '@/core/kinematics/cycle';
 
 export const MODES: { id: ViewMode; label: string }[] = [
@@ -16,21 +23,35 @@ export const MODES: { id: ViewMode; label: string }[] = [
   { id: 'despiece', label: 'Despiece' },
   { id: 'rayosx', label: 'Rayos X' },
   { id: 'tecnico', label: 'Técnico' },
+  { id: 'termica', label: 'Vista térmica' },
 ];
+
+/** Tecla de acceso de cada modo (1…9, 0 y T), la misma que muestra el botón. */
+export const modeKey = (i: number, id: ViewMode) => (id === 'termica' ? 'T' : i === 9 ? '0' : String(i + 1));
 
 export function Viewport() {
   const mode = useApp((s) => s.mode);
   const setMode = useApp((s) => s.setMode);
   const caption = useApp((s) => s.caption);
   const def = getEngine(useApp((s) => s.engineId));
+  const t = useT();
+  const [error, setError] = useState<string | null>(null);
   return (
     <main className="viewport">
-      <Scene />
+      <SceneBoundary>
+        <Scene onError={setError} />
+      </SceneBoundary>
+      <LabelLayer />
+      <LoadingOverlay />
+      {error && <ErrorOverlay message={error} />}
+      <PerfHud />
+      <SelectionCard />
+      <TourBar />
       <div className="overlay modes" role="tablist" aria-label="Modos de visualización">
         {MODES.map((m, i) => (
-          <button key={m.id} className={`mode-btn ${mode === m.id ? 'on' : ''}`} onClick={() => setMode(m.id)} title={m.label}>
-            <span className="num">{String(i + 1).padStart(2, '0')}</span>
-            <span className="txt">{m.label.toUpperCase()}</span>
+          <button key={m.id} role="tab" aria-selected={mode === m.id} className={`mode-btn ${mode === m.id ? 'on' : ''}`} onClick={() => setMode(m.id)} title={`${t(`mode.${m.id}`)} (${modeKey(i, m.id)})`}>
+            <span className="num">{modeKey(i, m.id)}</span>
+            <span className="txt">{t(`mode.${m.id}`).toUpperCase()}</span>
           </button>
         ))}
       </div>
@@ -60,6 +81,7 @@ export function Viewport() {
           </div>
         </div>
       )}
+      {mode === 'termica' && <ThermalLegend />}
       {caption && <div className="overlay caption">{caption}</div>}
       {def.assets.provisional && (
         <div className="overlay prov">

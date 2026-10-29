@@ -1,3 +1,4 @@
+import { useT } from '@/i18n';
 import { useState } from 'react';
 import { useApp, type FlowSystem } from '@/state/store';
 import { ENGINES } from '@/engines/catalog';
@@ -8,18 +9,19 @@ import { resetSim } from '@/core/simulation/clock';
 type Tab = 'catalogo' | 'componentes' | 'sistemas';
 
 export function LeftPanel() {
+  const t = useT();
   const [tab, setTab] = useState<Tab>('catalogo');
   return (
     <aside className="panel left">
       <div className="tabs">
         <button className={`tab ${tab === 'catalogo' ? 'on' : ''}`} onClick={() => setTab('catalogo')}>
-          Catálogo
+          {t('left.catalog')}
         </button>
         <button className={`tab ${tab === 'componentes' ? 'on' : ''}`} onClick={() => setTab('componentes')}>
-          Componentes
+          {t('left.components')}
         </button>
         <button className={`tab ${tab === 'sistemas' ? 'on' : ''}`} onClick={() => setTab('sistemas')}>
-          Sistemas
+          {t('left.systems')}
         </button>
       </div>
       <div className="panel-body">

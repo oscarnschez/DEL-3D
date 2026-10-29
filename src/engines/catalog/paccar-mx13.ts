@@ -1,5 +1,5 @@
 import type { EngineDefinition } from '../schema';
-import { approxGeometry, GENERIC_VALVES, hp, lbft, SRC_I6 } from './common';
+import { approxGeometry, GENERIC_VALVES, hp, lbft, SRC_I6, SRC_PAINT_TPI } from './common';
 
 export const paccarMX13: EngineDefinition = {
   id: 'paccar-mx13',
@@ -47,8 +47,18 @@ export const paccarMX13: EngineDefinition = {
     { id: 'mx13-daf', title: 'DAF — PACCAR MX-13 Engines (Euro 6, MY2025)', url: 'https://www.daf.global/-/media/files/document-library/infosheets/engines/euro-6/mx-13/daf-paccar-mx-13-engines-en-my2025.pdf?rev=-1', accessed: '2026-10-27' },
     { id: 'mx13-hdt', title: 'HDT Trucking Info — Test Drive: MX-13 in a Peterbilt 365', url: 'https://www.truckinginfo.com/articles/test-drive-mx-13-in-a-peterbilt-365', accessed: '2026-10-27' },
     SRC_I6,
+    { id: 'paint-mx13-forum', title: 'TheTruckersReport — comentario sobre el color del PACCAR MX-13 (foro)', url: 'https://www.thetruckersreport.com/truckingindustryforum/goto/post?id=7843134', accessed: '2026-10-28' },
+    SRC_PAINT_TPI,
   ],
-  style: { block: '#2c3036', head: '#33383f', cover: '#15171a', accent: '#c0c6cc', coverStyle: 'smooth' },
+  style: {
+    block: '#2a2d32', head: '#31353a', cover: '#15171a', accent: '#c0c6cc', coverStyle: 'smooth',
+    paint: {
+      summary: 'Bloque y culata gris carbón / negro',
+      status: 'aproximado',
+      note: 'Las fuentes secundarias describen los motores PACCAR como blancos, pero ese blanco corresponde a la pintura que PACCAR usaba antes; usuarios del foro TruckersReport identifican el MX-13 como negro o gris oscuro. Sin fuente oficial de PACCAR; pendiente de confirmar con foto de fábrica.',
+      sourceIds: ['paint-mx13-forum', 'paint-tpi'],
+    },
+  },
   assets: { provisional: true },
   notes: [
     'Arquitectura distinta al resto: árbol de levas bajo en el bloque con taqués, varillas y balancines (OHV).',

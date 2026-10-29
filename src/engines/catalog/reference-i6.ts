@@ -64,7 +64,10 @@ export const referenceI6: EngineDefinition = {
       accessed: '2026-10-27',
     },
   ],
-  style: { block: '#5b636c', head: '#6a737c', cover: '#2b3036', accent: '#3fa9ff', coverStyle: 'ribbed' },
+  style: {
+    block: '#5b636c', head: '#6a737c', cover: '#2b3036', accent: '#3fa9ff', coverStyle: 'ribbed',
+    paint: { summary: 'Gris genérico (motor de referencia sin fabricante)', status: 'aproximado', note: 'Motor educativo genérico: no representa la pintura de ningún fabricante.', sourceIds: [] },
+  },
   assets: { provisional: true },
   notes: [
     'Motor genérico de referencia: no representa ningún producto comercial.',

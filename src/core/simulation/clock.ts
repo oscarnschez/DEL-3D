@@ -19,6 +19,14 @@ export interface SimState {
   oilTemp: number;
   /** Carga actual filtrada (0–1). */
   load: number;
+  /**
+   * Revoluciones de cigüeñal acumuladas, sin envolver. Base temporal común de los efectos
+   * (flujos, remolino, partículas): avanza con el reloj, se detiene en pausa y se mueve con el
+   * avance manual (también hacia atrás), así los efectos son coherentes con la cinemática.
+   */
+  revs: number;
+  /** Temperatura de gases de escape estimada (°C, modelo educativo con inercia). */
+  egt: number;
 }
 
 export const sim: SimState = {
@@ -30,7 +38,24 @@ export const sim: SimState = {
   coolantTemp: 24,
   oilTemp: 24,
   load: 0.4,
+  revs: 0,
+  egt: 24,
 };
+
+/** Gira el cigüeñal `deltaDeg` grados (positivo = sentido de giro), manteniendo `revs` coherente. */
+export function advanceCrank(deltaDeg: number): void {
+  const a = (sim.angle + deltaDeg) % 720;
+  sim.angle = a < 0 ? a + 720 : a;
+  sim.revs += deltaDeg / 360;
+}
+
+/** Lleva el cigüeñal a `angleDeg` (0–720) por el camino más corto (arrastre de la línea de tiempo). */
+export function setCrankAngle(angleDeg: number): void {
+  let d = (angleDeg - sim.angle) % 720;
+  if (d >= 360) d -= 720;
+  if (d < -360) d += 720;
+  advanceCrank(d);
+}
 
 export function resetSim(): void {
   sim.angle = 0;
@@ -38,6 +63,7 @@ export function resetSim(): void {
   sim.turboAngle = 0;
   sim.turboRpm = 0;
   sim.time = 0;
+  sim.revs = 0;
 }
 
 /** Integración del régimen: respuesta de primer orden hacia el objetivo. */

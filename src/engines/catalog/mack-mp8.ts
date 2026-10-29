@@ -1,5 +1,5 @@
 import type { EngineDefinition } from '../schema';
-import { approxGeometry, GENERIC_VALVES, hp, lbft } from './common';
+import { approxGeometry, GENERIC_VALVES, hp, lbft, SRC_PAINT_SLASHGEAR, SRC_PAINT_TPI } from './common';
 
 export const mackMP8: EngineDefinition = {
   id: 'mack-mp8',
@@ -43,12 +43,24 @@ export const mackMP8: EngineDefinition = {
     { key: 'valvetrain', label: 'Distribución', value: 'Un árbol en cabeza (SOHC) — representación', status: 'aproximado', note: 'Supuesto por compartir base con el Volvo D13; no figura en la página Mack.' },
     { key: 'other', label: 'Pistón', value: 'Diseño de pistón «wave» patentado', status: 'verificado', sourceId: 'mp8' },
   ],
-  sources: [{ id: 'mp8', title: 'Mack Trucks — MP8 Engine', url: 'https://www.macktrucks.com/powertrain/engines/mp8', accessed: '2026-10-27' }],
-  style: { block: '#5a1f22', head: '#63262a', cover: '#1a1a1c', accent: '#c8a24a', coverStyle: 'ribbed' },
+  sources: [
+    { id: 'mp8', title: 'Mack Trucks — MP8 Engine', url: 'https://www.macktrucks.com/powertrain/engines/mp8', accessed: '2026-10-27' },
+    SRC_PAINT_SLASHGEAR,
+    SRC_PAINT_TPI,
+  ],
+  style: {
+    block: '#1f2124', head: '#26282c', cover: '#36393e', accent: '#c8a24a', coverStyle: 'ribbed',
+    paint: {
+      summary: 'Bloque y culata negros; tapa gris oscuro para distinguirla',
+      status: 'aproximado',
+      note: 'Dos fuentes secundarias coinciden en que Mack pinta sus motores de negro (el rojo corresponde a motores Mack antiguos). Ninguna nombra el MP8 ni hay fuente de Mack; el tono de la tapa es una elección de legibilidad.',
+      sourceIds: ['paint-slashgear', 'paint-tpi'],
+    },
+  },
   assets: { provisional: true },
   notes: [
     'Misma cilindrada y cotas que el Volvo D13, pero con turbo-compound y relación de compresión 16:1 según Mack.',
     'Mack publica explícitamente el orden de encendido 1-5-3-6-2-4.',
-    'Colores, biela, paso y reglaje: estimaciones.',
+    'Biela, paso y reglaje: estimaciones. Colores: ver «Pintura de fábrica».',
   ],
 };

@@ -1,7 +1,7 @@
-import { create } from 'zustand';
+import { create, type StoreApi, type UseBoundStore } from 'zustand';
 import { PARTS, parsePartKey, type PartId, type PartKey, type SystemId } from '@/engines/parts';
 
-interface SelectionState {
+export interface SelectionState {
   selected: PartKey | null;
   hovered: PartKey | null;
   hidden: Set<PartId>;
@@ -10,6 +10,8 @@ interface SelectionState {
   showRelated: boolean;
   /** Selección de un sistema completo (resalta todas sus piezas). */
   systemSel: SystemId | null;
+  /** Cómo se muestran las piezas no seleccionadas: atenuadas (opacas, oscurecidas) o transparentes. */
+  surround: 'atenuado' | 'transparente';
   /** Ver el movimiento individual: sólo la pieza seleccionada y las relacionadas se animan resaltadas. */
   select: (k: PartKey | null) => void;
   hover: (k: PartKey | null) => void;
@@ -19,7 +21,10 @@ interface SelectionState {
   restore: () => void;
 }
 
-export const useSelection = create<SelectionState>((set) => ({
+export type SelectionStore = UseBoundStore<StoreApi<SelectionState>>;
+
+/** Crea un store de selección (el principal y uno por motor en el comparador). */
+export const createSelectionStore = (): SelectionStore => create<SelectionState>((set) => ({
   selected: null,
   hovered: null,
   hidden: new Set(),
@@ -27,6 +32,7 @@ export const useSelection = create<SelectionState>((set) => ({
   isolate: false,
   showRelated: false,
   systemSel: null,
+  surround: 'atenuado',
   select: (k) => set({ selected: k, systemSel: null }),
   hover: (k) => set({ hovered: k }),
   toggleHidden: (id) =>
@@ -48,17 +54,19 @@ export const useSelection = create<SelectionState>((set) => ({
     set({ selected: null, hovered: null, hidden: new Set(), ghosted: new Set(), isolate: false, showRelated: false, systemSel: null }),
 }));
 
-export type PartVisualState = 'normal' | 'selected' | 'related' | 'dimmed' | 'isolatedOut' | 'hidden' | 'ghost';
+export const useSelection = createSelectionStore();
+
+export type PartVisualState = 'normal' | 'selected' | 'related' | 'dimmed' | 'faded' | 'isolatedOut' | 'hidden' | 'ghost';
 
 /** Estado visual de una pieza según la selección actual (función pura, usada por <Part>). */
 export function visualStateFor(
   id: PartId,
   index: number | undefined,
-  s: Pick<SelectionState, 'selected' | 'hidden' | 'ghosted' | 'isolate' | 'showRelated' | 'systemSel'>,
+  s: Pick<SelectionState, 'selected' | 'hidden' | 'ghosted' | 'isolate' | 'showRelated' | 'systemSel'> & { surround?: SelectionState['surround'] },
 ): PartVisualState {
   if (s.hidden.has(id)) return 'hidden';
   if (s.systemSel) {
-    return PARTS[id].system === s.systemSel ? 'selected' : s.isolate ? 'isolatedOut' : 'dimmed';
+    return PARTS[id].system === s.systemSel ? 'selected' : s.isolate ? 'isolatedOut' : s.surround === 'transparente' ? 'faded' : 'dimmed';
   }
   if (s.selected) {
     const sel = parsePartKey(s.selected);
@@ -66,7 +74,7 @@ export function visualStateFor(
     if (isSel) return 'selected';
     const related = PARTS[sel.id].related.includes(id) && (sel.index === undefined || index === undefined || sel.index === index);
     if (s.showRelated && related) return 'related';
-    return s.isolate ? 'isolatedOut' : 'dimmed';
+    return s.isolate ? 'isolatedOut' : s.surround === 'transparente' ? 'faded' : 'dimmed';
   }
   if (s.ghosted.has(id)) return 'ghost';
   return 'normal';

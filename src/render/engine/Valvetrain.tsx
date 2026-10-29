@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Part } from '@/interaction/Part';
@@ -8,6 +8,7 @@ import { valveLift } from '@/core/kinematics/valvetrain';
 import { camRotation, rockerAngle } from '@/core/kinematics/engineState';
 import type { EngineLayout } from '@/engines/derive';
 import { getMaterials } from '../materials';
+import { useDisposable } from '../resources';
 import { camLobeGeometry, extrudeX, gearGeometry, journalGeometry, lathe, mergeGeometries, roundedRectShape, springGeometry, valveGeometry } from '../geometry/builders';
 import { useEngine } from './useEngine';
 
@@ -58,7 +59,7 @@ function stripUv(g: THREE.BufferGeometry): THREE.BufferGeometry {
 export function Camshafts() {
   const { L, angle } = useEngine();
   const M = getMaterials();
-  const shafts = useMemo(
+  const shafts = useDisposable(
     () =>
       L.kind === 'dohc'
         ? [
@@ -74,9 +75,9 @@ export function Camshafts() {
     refs.current.forEach((m) => m && (m.rotation.x = c));
   });
   return (
-    <Part id="camshaft" explodeScale={0.25}>
+    <Part id="camshaft">
       {shafts.map((sh, k) => (
-        <mesh key={k} ref={(m) => (refs.current[k] = m)} geometry={sh.geo} material={M.machinedSteel} position={[0, L.camY, sh.z]} />
+        <mesh key={k} ref={(m) => (refs.current[k] = m)} geometry={sh.geo} material={M.oiledSteel} position={[0, L.camY, sh.z]} />
       ))}
     </Part>
   );
@@ -153,7 +154,7 @@ function fingerGeometry(L: EngineLayout): THREE.BufferGeometry {
 export function ValvesAndRockers() {
   const { L, states } = useEngine();
   const M = getMaterials();
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const stem = L.valveTipY - L.valveSeatY;
     const rocker = L.kind === 'dohc' ? rockerGeometry(L) : fingerGeometry(L);
     const rockerEx = rocker.clone();
@@ -244,7 +245,7 @@ export function ValvesAndRockers() {
               const vz = (k: number) => (ohv ? (k * L.valvePairDx) / 2 : sideSign(side) * L.valveZ);
               const vg = side === 'intake' ? geo.valveI : geo.valveE;
               return (
-                <Part key={side} id={side === 'intake' ? 'intakeValves' : 'exhaustValves'} index={i + 1} explodeScale={0.25}>
+                <Part key={side} id={side === 'intake' ? 'intakeValves' : 'exhaustValves'} index={i + 1}>
                   {[-1, 1].map((k, kk) => (
                     <group key={k}>
                       <group ref={(el) => el && (R.v[s * 2 + kk] = el)} position={[vx(k), L.valveSeatY, vz(k)]}>
@@ -262,7 +263,7 @@ export function ValvesAndRockers() {
                 </Part>
               );
             })}
-            <Part id="rockers" index={i + 1} explodeScale={0.25}>
+            <Part id="rockers" index={i + 1}>
               {(['intake', 'exhaust'] as Side[]).map((side, s) => {
                 const sg = sideSign(side);
                 return (
@@ -304,13 +305,13 @@ export function ValvesAndRockers() {
         );
       })}
       {L.kind === 'sohc' && (
-        <Part id="rockers" explodeScale={0.25}>
+        <Part id="rockers">
           {L.cylX.map((x) =>
             [-1, 1].map((sg) => <mesh key={`${x}${sg}`} geometry={geo.post} material={M.machinedSteel} position={[x + sg * L.lobeOffset, L.headTopY, -sg * L.rockerPivotZ]} />),
           )}
         </Part>
       )}
-      {L.kind !== 'sohc' && <Part id="rockers" explodeScale={0.25}>
+      {L.kind !== 'sohc' && <Part id="rockers">
         {(L.kind === 'ohv' ? [1] : [-1, 1]).map((sg) => (
           <group key={sg}>
             <mesh geometry={geo.shaft} material={M.machinedSteel} position={[0, L.rockerPivotY, sg * L.rockerPivotZ]} />
@@ -333,7 +334,7 @@ export function ValvesAndRockers() {
 export function TimingGears() {
   const { L, angle } = useEngine();
   const M = getMaterials();
-  const train = useMemo(() => {
+  const train = useDisposable(() => {
     const k = L.bore / 0.135;
     const rC = 0.32 * L.bore; // engrane del cigüeñal (también modelado en el cigüeñal)
     const rCam = 2 * rC; // relación 2:1
@@ -388,7 +389,7 @@ export function TimingGears() {
   const front = L.def.valvetrain.gearTrain === 'front';
   const x = front ? L.front - 0.018 : L.rear + 0.012;
   return (
-    <Part id="timingGears" explodeScale={0.25}>
+    <Part id="timingGears">
       {train.map((g, i) => (
         <mesh key={i} ref={(m) => (refs.current[i] = m)} geometry={g.geo} material={g.r === train[train.length - 1].r && g.y === L.camY ? M.machinedSteel : M.darkSteel} position={[x, g.y, g.z]} />
       ))}

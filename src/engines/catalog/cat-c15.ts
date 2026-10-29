@@ -1,5 +1,5 @@
 import type { EngineDefinition } from '../schema';
-import { approxGeometry, GENERIC_VALVES, hp, SRC_I6 } from './common';
+import { approxGeometry, GENERIC_VALVES, hp, SRC_I6, SRC_PAINT_SLASHGEAR, SRC_PAINT_TPI } from './common';
 
 export const catC15: EngineDefinition = {
   id: 'cat-c15',
@@ -41,12 +41,22 @@ export const catC15: EngineDefinition = {
   sources: [
     { id: 'c15-cat', title: 'Caterpillar — C15 ACERT (Dry Manifold), motores de servicio de pozos', url: 'https://www.cat.com/en_US/products/new/power-systems/oil-and-gas/well-service-engines/18436090.html', accessed: '2026-10-27' },
     SRC_I6,
+    SRC_PAINT_SLASHGEAR,
+    SRC_PAINT_TPI,
   ],
-  style: { block: '#d6a419', head: '#dcab21', cover: '#1c1c1c', accent: '#ffcd11', coverStyle: 'ribbed' },
+  style: {
+    block: '#e8ae0c', head: '#efb914', cover: '#1c1c1c', accent: '#ffcd11', coverStyle: 'ribbed',
+    paint: {
+      summary: 'Bloque y culata amarillo Cat; tapa negra',
+      status: 'aproximado',
+      note: 'El amarillo característico de Cat en sus motores está respaldado por fuentes secundarias coincidentes; no se localizó un documento de Caterpillar que fije el tono del C15 de camión. El hexadecimal se aproxima al amarillo de marca Cat.',
+      sourceIds: ['paint-slashgear', 'paint-tpi'],
+    },
+  },
   assets: { provisional: true },
   notes: [
     'Inyección por inyector-bomba (MEUI): el recorrido del combustible no tiene riel de alta presión.',
     'La cilindrada (15.2 L) y las cotas provienen de Cat; la calibración de camión y los turbos en serie son aproximados.',
-    'Pintura amarilla característica de Cat representada de forma aproximada; sin logotipos.',
+    'Sin logotipos de marca en el modelo 3D.',
   ],
 };

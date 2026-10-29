@@ -1,16 +1,52 @@
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Part } from '@/interaction/Part';
 import { sim } from '@/core/simulation/clock';
 import { DEG } from '@/core/kinematics/crank';
 import type { EngineLayout } from '@/engines/derive';
-import { getMaterials } from '../materials';
-import { extrudeX, gearGeometry, journalGeometry, lathe, pipeGeometry, polyShape, roundedRectShape } from '../geometry/builders';
+import { cloneMaterial, getMaterials } from '../materials';
+import { useDisposable } from '../resources';
+import { extrudeX, gearGeometry, journalGeometry, lathe, mergeGeometries, pipeGeometry, polyShape, roundedRectShape } from '../geometry/builders';
 import { useEngine } from './useEngine';
 import { shellDims } from './Structure';
 
 const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
+
+/**
+ * Abrazaderas de manguera (banda de acero inoxidable con alojamiento del tornillo) en ambos
+ * extremos de cada manguera: componente genérico presente en toda unión manguera-tubo.
+ */
+function HoseClamps({ tubes }: { tubes: THREE.BufferGeometry[] }) {
+  const M = getMaterials();
+  const geo = useDisposable(() => {
+    const parts: THREE.BufferGeometry[] = [];
+    const up = new THREE.Vector3(0, 0, 1);
+    const q = new THREE.Quaternion();
+    const m = new THREE.Matrix4();
+    for (const t of tubes) {
+      const prm = (t as THREE.TubeGeometry).parameters;
+      if (!prm?.path) continue;
+      for (const u of [0.035, 0.965]) {
+        const p = prm.path.getPointAt(u);
+        const tan = prm.path.getTangentAt(u);
+        q.setFromUnitVectors(up, tan);
+        const band = new THREE.TorusGeometry(prm.radius + 0.0018, 0.0022, 6, 28);
+        const screw = new THREE.BoxGeometry(0.012, 0.009, 0.014);
+        screw.translate(0, prm.radius + 0.006, 0);
+        for (const g of [band, screw]) {
+          m.compose(p, q, new THREE.Vector3(1, 1, 1));
+          g.applyMatrix4(m);
+          parts.push(g.index ? g.toNonIndexed() : g);
+        }
+      }
+    }
+    const out = mergeGeometries(parts.map((g) => { g.deleteAttribute('uv'); return g; }))!;
+    parts.forEach((g) => g.dispose());
+    return out;
+  }, [tubes]);
+  return <mesh geometry={geo} material={M.stainless} />;
+}
 
 /** Puntos de referencia de los sistemas auxiliares, compartidos con las trayectorias de fluidos. */
 export function auxLayout(L: EngineLayout) {
@@ -43,8 +79,8 @@ export function auxLayout(L: EngineLayout) {
 export function FuelSystem() {
   const { L, states } = useEngine();
   const M = getMaterials();
-  const A = useMemo(() => auxLayout(L), [L]);
-  const geo = useMemo(() => {
+  const A = useDisposable(() => auxLayout(L), [L]);
+  const geo = useDisposable(() => {
     const tipY = L.deckY - 0.003;
     const topY = L.deckY + L.headHeight * 0.95;
     const h = topY - tipY;
@@ -99,7 +135,9 @@ export function FuelSystem() {
       40,
       8,
     );
-    return { injector, quill, rail, pump, filter, hp, low, tipY, eui };
+    // camisa de cobre del inyector (asiento en la culata, transmite calor al refrigerante)
+    const sleeve = lathe([[0.0078, 0.004], [0.0092, 0.004], [0.0092, h * 0.42], [0.0078, h * 0.42]], 24);
+    return { injector, sleeve, quill, rail, pump, filter, hp, low, tipY, eui };
   }, [L, A]);
   const needles = useRef<(THREE.Mesh | null)[]>([]);
   useFrame(() => {
@@ -110,13 +148,14 @@ export function FuelSystem() {
       mat.emissiveIntensity = states[i].injection * 2.5;
     });
   });
-  const injGlow = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2b2f33', emissive: '#ffd23f', emissiveIntensity: 0, metalness: 0.6, roughness: 0.4 }), []);
+  const injGlow = useDisposable(() => new THREE.MeshStandardMaterial({ color: '#2b2f33', emissive: '#ffd23f', emissiveIntensity: 0, metalness: 0.6, roughness: 0.4 }), []);
   return (
     <>
       {L.cylX.map((x, i) => (
-        <Part key={i} id="injector" index={i + 1} explodeScale={0.25}>
+        <Part key={i} id="injector" index={i + 1}>
           <group position={[x, geo.tipY, 0]}>
             <mesh geometry={geo.injector} material={M.zinc} />
+            <mesh geometry={geo.sleeve} material={M.copper} />
             <mesh ref={(m) => (needles.current[i] = m)} material={injGlow} position={[0, (L.headHeight * 0.95 + 0.003) * 0.6, 0]} userData={{ noPart: true }}>
               <cylinderGeometry args={[0.0108, 0.0108, 0.02, 20]} />
             </mesh>
@@ -147,8 +186,8 @@ export function FuelSystem() {
 export function AirSystem() {
   const { L } = useEngine();
   const M = getMaterials();
-  const A = useMemo(() => auxLayout(L), [L]);
-  const geo = useMemo(() => {
+  const A = useDisposable(() => auxLayout(L), [L]);
+  const geo = useDisposable(() => {
     const d = A.d;
     // múltiple de admisión: plenum + runners
     const plenum = extrudeX(roundedRectShape(0.07, 0.085, 0.03), L.blockLength * 0.95, 0.005, 10);
@@ -224,20 +263,22 @@ export function AirSystem() {
         <mesh geometry={geo.tank} material={M.aluminumCast} position={[A.cooler.x, A.cooler.y, -0.45]} />
         <mesh geometry={geo.hot} material={M.hose} />
         <mesh geometry={geo.cold} material={M.hose} />
+        <HoseClamps tubes={[geo.hot, geo.cold]} />
       </Part>
       {L.def.air.egr && (
         <Part id="egr">
-          <mesh geometry={geo.egrCooler} material={M.zinc} position={A.egrCooler} />
+          <mesh geometry={geo.egrCooler} material={M.stainless} position={A.egrCooler} />
           <mesh geometry={geo.egrPipe} material={M.heatShield} />
           <mesh geometry={geo.egrOut} material={M.heatShield} />
         </Part>
       )}
-      <Part id="aftertreatment" explodeScale={0.3}>
+      <Part id="aftertreatment">
         <mesh geometry={geo.down} material={M.heatShield} />
         <Aftertreatment />
       </Part>
       <Part id="turbo">
         <mesh geometry={geo.inlet} material={M.hose} />
+        <HoseClamps tubes={[geo.inlet]} />
       </Part>
     </>
   );
@@ -247,8 +288,8 @@ export function AirSystem() {
 function Turbo() {
   const { L } = useEngine();
   const M = getMaterials();
-  const A = useMemo(() => auxLayout(L), [L]);
-  const geo = useMemo(() => {
+  const A = useDisposable(() => auxLayout(L), [L]);
+  const geo = useDisposable(() => {
     const volute = (R: number, r: number) => {
       // voluta de sección creciente alrededor del eje X
       const pts: THREE.Vector3[] = [];
@@ -288,13 +329,13 @@ function Turbo() {
   const air = L.def.air;
   const unit = (k: number, pos: [number, number, number], scale: number) => (
     <group key={k} position={pos} scale={scale}>
-      <mesh geometry={geo.compVol} material={M.aluminumCast} position={[-0.06, 0, 0]} />
-      <mesh geometry={geo.compShroud} material={M.aluminumCast} position={[-0.075, 0, 0]} />
+      <mesh geometry={geo.compVol} material={M.aluminumCast} position={[-0.06, 0, 0]} userData={{ thermal: 'turboCompressor' }} />
+      <mesh geometry={geo.compShroud} material={M.aluminumCast} position={[-0.075, 0, 0]} userData={{ thermal: 'turboCompressor' }} />
       <mesh geometry={geo.center} material={M.rawIron} />
-      <mesh geometry={geo.turbVol} material={M.exhaustIron} position={[0.07, 0, 0]} />
+      <mesh geometry={geo.turbVol} material={M.exhaustIron} position={[0.07, 0, 0]} userData={{ thermal: 'turboTurbine' }} />
       {air.turbo === 'vgt' && k === 0 && (
         // actuador de la geometría variable
-        <mesh position={[0.07, 0.085, 0.06]} material={M.blackPaint}>
+        <mesh position={[0.07, 0.085, 0.06]} material={M.plastic}>
           <boxGeometry args={[0.07, 0.04, 0.05]} />
         </mesh>
       )}
@@ -330,8 +371,8 @@ function Turbo() {
 function Aftertreatment() {
   const { L } = useEngine();
   const M = getMaterials();
-  const A = useMemo(() => auxLayout(L), [L]);
-  const geo = useMemo(() => {
+  const A = useDisposable(() => auxLayout(L), [L]);
+  const geo = useDisposable(() => {
     const can = lathe(
       [
         [0, -0.48],
@@ -351,18 +392,11 @@ function Aftertreatment() {
   }, []);
   return (
     <group position={A.after}>
-      <mesh geometry={geo.can} material={M.zinc} />
+      <mesh geometry={geo.can} material={M.stainless} />
+      {/* abrazaderas en V entre módulos (DOC · DPF · SCR) */}
       {[-0.25, 0.05, 0.3].map((x) => (
-        <mesh key={x} geometry={geo.band} material={M.darkSteel} position={[x, 0, 0]} />
+        <mesh key={x} geometry={geo.band} material={M.heatShield} position={[x, 0, 0]} />
       ))}
-      <group position={[0, 0.2, 0]}>
-        {[-0.22, 0.02, 0.27].map((x, i) => (
-          <mesh key={x} position={[x, 0, 0]}>
-            <boxGeometry args={[0.08, 0.025, 0.05]} />
-            <meshStandardMaterial color={['#3fa9ff', '#9aa3ad', '#a78bfa'][i]} metalness={0.2} roughness={0.6} />
-          </mesh>
-        ))}
-      </group>
     </group>
   );
 }
@@ -370,9 +404,9 @@ function Aftertreatment() {
 export function LubeSystem() {
   const { L, angle } = useEngine();
   const M = getMaterials();
-  const A = useMemo(() => auxLayout(L), [L]);
+  const A = useDisposable(() => auxLayout(L), [L]);
   const gear = useRef<THREE.Mesh>(null);
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const pump = extrudeX(roundedRectShape(0.09, 0.07, 0.02), 0.07, 0.004, 6);
     const pg = gearGeometry(0.03, 20, 0.02);
     const pickup = pipeGeometry([V(A.oilPump.x, A.oilPump.y - 0.03, 0), V(A.oilPump.x + 0.05, L.sumpBottomY + 0.06, 0), V(L.blockLength * 0.22, L.sumpBottomY + 0.035, 0)], 0.014, 32, 10);
@@ -406,9 +440,9 @@ export function LubeSystem() {
 export function CoolingSystem() {
   const { L, angle } = useEngine();
   const M = getMaterials();
-  const A = useMemo(() => auxLayout(L), [L]);
+  const A = useDisposable(() => auxLayout(L), [L]);
   const pulley = useRef<THREE.Group>(null);
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const vol = lathe([[0, -0.04], [0.07, -0.04], [0.085, -0.02], [0.085, 0.03], [0.06, 0.045], [0, 0.045]], 40);
     vol.rotateZ(-Math.PI / 2);
     const p = lathe([[0, -0.015], [0.065, -0.015], [0.065, 0.015], [0, 0.015]], 40);
@@ -434,10 +468,12 @@ export function CoolingSystem() {
           ))}
         </group>
         <mesh geometry={geo.inlet} material={M.hose} />
+        <HoseClamps tubes={[geo.inlet]} />
       </Part>
       <Part id="thermostat">
         <mesh geometry={geo.tstat} material={M.aluminumCast} position={A.thermostat} />
         <mesh geometry={geo.outlet} material={M.hose} />
+        <HoseClamps tubes={[geo.outlet]} />
       </Part>
     </>
   );
@@ -447,7 +483,7 @@ export function CoolingSystem() {
 export function Housings() {
   const { L } = useEngine();
   const M = getMaterials();
-  const geo = useMemo(() => {
+  const geo = useDisposable(() => {
     const d = shellDims(L);
     const topY = L.kind === 'ohv' ? L.camY : L.camY;
     const zR = L.kind === 'ohv' ? 0.06 : L.camZ + 0.11;
@@ -488,8 +524,8 @@ export function Housings() {
     bell.rotateZ(-Math.PI / 2);
     return { cover, bell, d };
   }, [L]);
-  const paint = useMemo(() => {
-    const m = getMaterials().paintedIron.clone();
+  const paint = useDisposable(() => {
+    const m = cloneMaterial(getMaterials().paintedIron);
     m.color.set(L.def.style.block);
     return m;
   }, [L.def.style.block]);

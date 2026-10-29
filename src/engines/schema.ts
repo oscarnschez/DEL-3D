@@ -101,14 +101,26 @@ export interface EngineAir {
   description: string;
 }
 
+/** Respaldo documental de los colores de pintura de fábrica de un motor. */
+export interface PaintInfo {
+  /** Descripción corta del acabado representado (p. ej. «Bloque amarillo Cat»). */
+  summary: string;
+  status: DataStatus;
+  /** Qué se pudo confirmar y qué no. */
+  note: string;
+  /** ids de Source que respaldan el color. */
+  sourceIds: string[];
+}
+
 export interface EngineStyle {
-  /** Color de la pintura del bloque (representación aproximada). */
+  /** Color de la pintura de fábrica del bloque (ver `paint` para su respaldo). */
   block: string;
   head: string;
   cover: string;
   accent: string;
   /** Rasgos de diseño exterior que la geometría procedural reproduce. */
   coverStyle: 'ribbed' | 'smooth' | 'split' | 'stepped';
+  paint: PaintInfo;
 }
 
 export interface EngineDefinition {

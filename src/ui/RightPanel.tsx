@@ -1,3 +1,4 @@
+import { useT } from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/state/store';
 import { getEngine } from '@/engines/catalog';
@@ -8,10 +9,12 @@ import { sim } from '@/core/simulation/clock';
 import { cameraApi } from '@/camera/CameraRig';
 import { useSimSnapshot } from './useSimSnapshot';
 import { CycleDial } from './CycleDial';
+import { CycleChart } from './CycleChart';
 
 type Tab = 'ficha' | 'pieza' | 'datos';
 
 export function RightPanel() {
+  const t = useT();
   const [tab, setTab] = useState<Tab>('datos');
   const selected = useSelection((s) => s.selected);
   useEffect(() => {
@@ -21,13 +24,13 @@ export function RightPanel() {
     <aside className="panel right">
       <div className="tabs">
         <button className={`tab ${tab === 'ficha' ? 'on' : ''}`} onClick={() => setTab('ficha')}>
-          Ficha técnica
+          {t('right.sheet')}
         </button>
         <button className={`tab ${tab === 'pieza' ? 'on' : ''}`} onClick={() => setTab('pieza')}>
-          Pieza
+          {t('right.part')}
         </button>
         <button className={`tab ${tab === 'datos' ? 'on' : ''}`} onClick={() => setTab('datos')}>
-          Datos
+          {t('right.data')}
         </button>
       </div>
       <div className="panel-body">
@@ -117,6 +120,29 @@ function SpecSheet() {
       <div className="section-title">Inyección y aire</div>
       <p className="muted" style={{ fontSize: 12, lineHeight: 1.5, marginTop: 0 }}>{def.injection.description}</p>
       <p className="muted" style={{ fontSize: 12, lineHeight: 1.5 }}>{def.air.description}</p>
+      <div className="section-title">Pintura de fábrica</div>
+      <div className="spec">
+        <span className="k">
+          <span className="swatch" style={{ background: def.style.block }} />
+          <span className="swatch" style={{ background: def.style.cover }} />
+          {def.style.paint.summary}
+        </span>
+        <StatusBadge s={def.style.paint.status} />
+        <span className="n">{def.style.paint.note}</span>
+        {def.style.paint.sourceIds.map((id) => {
+          const so = src(id);
+          return (
+            so && (
+              <span className="n" key={id}>
+                Fuente:{' '}
+                <a href={so.url} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)' }}>
+                  {so.title}
+                </a>
+              </span>
+            )
+          );
+        })}
+      </div>
       {def.notes.length > 0 && (
         <>
           <div className="section-title">Notas</div>
@@ -278,6 +304,8 @@ function Dashboard() {
           <Gauge key={k} r={get(k)} />
         ))}
       </div>
+      <div className="section-title">Ciclo del cilindro (presión, válvulas e inyección)</div>
+      <CycleChart />
       <div className="section-title">Gráfica en tiempo real</div>
       <LiveChart />
       <div className="section-title">Origen de los valores</div>

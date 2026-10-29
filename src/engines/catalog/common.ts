@@ -38,3 +38,18 @@ export const GENERIC_VALVES: Pick<EngineValvetrain, 'timing' | 'timingStatus' | 
 
 export const lbft = (v: number) => Math.round(v * 1.35582);
 export const hp = (v: number) => Math.round(v * 0.7457);
+
+/** Fuentes secundarias sobre los colores de pintura de fábrica por marca (no son del fabricante). */
+export const SRC_PAINT_SLASHGEAR: Source = {
+  id: 'paint-slashgear',
+  title: 'SlashGear — How The Color Of Your Diesel Engine Can Help Tell You Who Made It',
+  url: 'https://www.slashgear.com/1984705/how-diesel-engine-color-reveals-who-made-it/',
+  accessed: '2026-10-28',
+};
+
+export const SRC_PAINT_TPI: Source = {
+  id: 'paint-tpi',
+  title: 'Truck Parts Inventory — The Colors of Diesel',
+  url: 'https://insider.truckpartsinventory.com/the-colors-of-diesel/',
+  accessed: '2026-10-28',
+};
